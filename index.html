@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Controlled Drone Run</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        canvas { display: block; }
+        #video-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 220px;
+            height: 165px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 10;
+            transform: scaleX(-1); 
+            background: #000;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+        #webcam { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+        #ui-layer {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: #fff;
+            z-index: 10;
+            pointer-events: none;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #score-container {
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00d2ff;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            display: inline-block;
+        }
+        .instructions { 
+            font-size: 14px; 
+            margin-top: 5px; 
+            color: rgba(255,255,255,0.7); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00d2ff;
+            font-size: 24px;
+            background: rgba(16, 16, 32, 0.95);
+            padding: 50px;
+            border-radius: 16px;
+            z-index: 20;
+            text-align: center;
+            border: 2px solid #00d2ff;
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.3);
+            font-family: 'Courier New', monospace;
+            min-width: 400px;
+        }
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(16, 16, 32, 0.95);
+            color: white;
+            padding: 50px;
+            text-align: center;
+            border-radius: 20px;
+            z-index: 30;
+            box-shadow: 0 0 40px rgba(255, 71, 87, 0.4);
+            border: 1px solid #ff4757;
+            min-width: 300px;
+        }
+        button {
+            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 30px;
+            margin-top: 25px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        button:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+        }
+        h1 { margin: 0 0 15px 0; color: #ff4757; text-transform: uppercase; letter-spacing: 3px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div style="margin-bottom: 20px; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #00d2ff;">CAMERA ACCESS REQUIRED</div>
+        <div style="margin-bottom: 15px; color: white;">INITIALIZING SYSTEMS...</div>
+        <div style="font-size: 16px; opacity: 0.9; color: #ff4757; font-weight: bold;">Please click "Allow" when prompted to control the drone with your hand.</div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="score-container">SCORE: <span id="score">0</span></div>
+        <div class="instructions">Control with Hand Position</div>
+    </div>
+
+    <div id="video-container">
+        <video id="webcam" autoplay playsinline></video>
+    </div>
+
+    <div id="game-over">
+        <h1>SYSTEM FAILURE</h1>
+        <p style="font-size: 1.2em; color: #ccc;">MISSION SCORE: <span id="final-score" style="color: white; font-weight: bold;">0</span></p>
+        <button onclick="restartGame()">REBOOT SYSTEM</button>
+    </div>
+
+    <!-- Import Three.js and MediaPipe -->
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+        import { FilesetResolver, HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0';
+
+        // --- GAME VARIABLES ---
+        let scene, camera, renderer;
+        let drone;
+        let trees = [];
+        let rings = [];
+        let particles; // Starfield/Dust
+        let floorGrid;
+        let gameActive = false;
+        let score = 0;
+        let speed = 0.5;
+        let targetX = 0;
+        let targetY = 5;
+        let handLandmarker = undefined;
+        let lastVideoTime = -1;
+        
+        // Colors
+        const COLORS = {
+            sky: 0x1a1a2e,
+            ground: 0x16213e,
+            grid: 0x0f3460,
+            droneBody: 0x222222,
+            droneLight: 0x00d2ff,
+            treeDark: 0x1a472a,
+            treeLight: 0x2d6a4f,
+            ring: 0xffd700
+        };
+
+        // --- SETUP THREE.JS SCENE ---
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(COLORS.sky);
+            scene.fog = new THREE.FogExp2(COLORS.sky, 0.035);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 12);
+            camera.lookAt(0, 4, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            document.body.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.HemisphereLight(0xffffff, 0x080820, 0.5);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(10, 20, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 50;
+            dirLight.shadow.camera.left = -25;
+            dirLight.shadow.camera.right = 25;
+            dirLight.shadow.camera.top = 25;
+            dirLight.shadow.camera.bottom = -25;
+            scene.add(dirLight);
+
+            // Ground - Infinite Grid Style
+            const planeGeometry = new THREE.PlaneGeometry(500, 500);
+            const planeMaterial = new THREE.MeshStandardMaterial({ 
+                color: COLORS.ground,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const ground = new THREE.Mesh(planeGeometry, planeMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Grid Helper for Synthwave feel
+            floorGrid = new THREE.GridHelper(500, 100, 0xe94560, COLORS.grid);
+            floorGrid.position.y = 0.05;
+            scene.add(floorGrid);
+
+            createParticles();
+            createDrone();
+            
+            // Initial Objects
+            for(let i=0; i<20; i++) spawnTree(-30 - (i*12));
+        }
+
+        // --- PARTICLE SYSTEM ---
+        function createParticles() {
+            const particleCount = 400;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 100; // x
+                positions[i * 3 + 1] = Math.random() * 40;      // y
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 200; // z
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0x00d2ff,
+                size: 0.2,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        // --- IMPROVED DRONE MODEL ---
+        function createDrone() {
+            drone = new THREE.Group();
+
+            // Main Body - Sleek
+            const bodyGeo = new THREE.BoxGeometry(1.0, 0.15, 0.6);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: COLORS.droneBody, 
+                roughness: 0.3, 
+                metalness: 0.8 
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.castShadow = true;
+            drone.add(body);
+
+            // Top Dome
+            const domeGeo = new THREE.SphereGeometry(0.25, 16, 16, 0, Math.PI * 2, 0, Math.PI/2);
+            const domeMat = new THREE.MeshStandardMaterial({ 
+                color: 0x111111, 
+                roughness: 0.1, 
+                metalness: 0.9 
+            });
+            const dome = new THREE.Mesh(domeGeo, domeMat);
+            dome.position.y = 0.05;
+            drone.add(dome);
+
+            // Arms
+            const armMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.7 });
+            const propMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const bladeMat = new THREE.MeshBasicMaterial({ color: COLORS.droneLight, transparent: true, opacity: 0.8 }); // Glowing blades
+
+            const positions = [
+                {x: -0.8, z: 0.6}, {x: 0.8, z: 0.6},
+                {x: -0.8, z: -0.6}, {x: 0.8, z: -0.6}
+            ];
+
+            positions.forEach(pos => {
+                // Arm strut
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 1.2), armMat);
+                arm.position.set(pos.x/1.6, 0, pos.z/1.6);
+                arm.lookAt(pos.x, 0, pos.z);
+                drone.add(arm);
+
+                // Motor
+                const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.15, 8), armMat);
+                motor.position.set(pos.x, 0.05, pos.z);
+                drone.add(motor);
+
+                // Propeller Group
+                const propGroup = new THREE.Group();
+                propGroup.position.set(pos.x, 0.15, pos.z);
+                
+                // Blades
+                const blade1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.01, 0.1), bladeMat);
+                const blade2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.01, 0.1), bladeMat);
+                blade2.rotation.y = Math.PI/2;
+                
+                propGroup.add(blade1);
+                propGroup.add(blade2);
+                
+                propGroup.userData = { isProp: true };
+                drone.add(propGroup);
+                
+                // Glow under prop
+                const glow = new THREE.PointLight(COLORS.droneLight, 0.5, 2);
+                glow.position.set(pos.x, -0.2, pos.z);
+                drone.add(glow);
+            });
+
+            // Rear Engines (Emissive)
+            const engineGeo = new THREE.BoxGeometry(0.6, 0.1, 0.1);
+            const engineMat = new THREE.MeshStandardMaterial({ 
+                color: 0xff4757, 
+                emissive: 0xff4757, 
+                emissiveIntensity: 2 
+            });
+            const engine = new THREE.Mesh(engineGeo, engineMat);
+            engine.position.set(0, 0, 0.35);
+            drone.add(engine);
+
+            // Headlight
+            const spotLight = new THREE.SpotLight(0xffffff, 2);
+            spotLight.position.set(0, 0, -0.5);
+            spotLight.angle = Math.PI / 6;
+            spotLight.penumbra = 0.2;
+            spotLight.decay = 2;
+            spotLight.distance = 20;
+            spotLight.target.position.set(0, -2, -10);
+            drone.add(spotLight);
+            drone.add(spotLight.target);
+
+            drone.position.set(0, 5, 0);
+            scene.add(drone);
+        }
+
+        // --- BETTER TREES (LOW POLY) ---
+        function spawnTree(zOffset) {
+            const tree = new THREE.Group();
+            
+            let xPos = (Math.random() * 50) - 25;
+            if (Math.abs(xPos) < 4) xPos = 8; // Clear center path
+
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 3, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1.5;
+            trunk.castShadow = true;
+            tree.add(trunk);
+
+            // Leaves - Layered Cones
+            const leafMat = new THREE.MeshStandardMaterial({ 
+                color: COLORS.treeLight, 
+                roughness: 0.8,
+                flatShading: true
+            });
+
+            const level1 = new THREE.Mesh(new THREE.ConeGeometry(2.5, 3, 7), leafMat);
+            level1.position.y = 3.5;
+            level1.castShadow = true;
+            tree.add(level1);
+
+            const level2 = new THREE.Mesh(new THREE.ConeGeometry(2.0, 3, 7), leafMat);
+            level2.position.y = 5.0;
+            level2.castShadow = true;
+            tree.add(level2);
+
+            const level3 = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.5, 7), leafMat);
+            level3.position.y = 6.5;
+            level3.castShadow = true;
+            tree.add(level3);
+
+            // Scale variation
+            const scale = 0.8 + Math.random() * 0.6;
+            tree.scale.set(scale, scale, scale);
+            tree.rotation.y = Math.random() * Math.PI;
+
+            tree.position.set(xPos, 0, zOffset);
+            tree.userData = { type: 'tree', radius: 1.5 * scale };
+            
+            scene.add(tree);
+            trees.push(tree);
+
+            // Spawn ring
+            if (Math.random() > 0.4) {
+                spawnRing(zOffset, xPos);
+            }
+        }
+
+        function spawnRing(zPos, treeX) {
+            const geometry = new THREE.TorusGeometry(1.3, 0.15, 12, 32);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: COLORS.ring,
+                emissive: COLORS.ring,
+                emissiveIntensity: 0.8,
+                metalness: 0.8,
+                roughness: 0.2
+            }); 
+            const ring = new THREE.Mesh(geometry, material);
+            
+            let ringX = (Math.random() * 24) - 12;
+            if (Math.abs(ringX - treeX) < 4) ringX = -ringX; 
+
+            const ringY = 3 + Math.random() * 6;
+
+            ring.position.set(ringX, ringY, zPos);
+            ring.userData = { type: 'ring', radius: 1.3, active: true };
+            
+            // Add point light to ring for glow effect
+            const light = new THREE.PointLight(COLORS.ring, 0.5, 5);
+            ring.add(light);
+            
+            scene.add(ring);
+            rings.push(ring);
+        }
+
+        // --- MEDIAPIPE ---
+        async function initHandTracking() {
+            try {
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+                );
+                
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    numHands: 1
+                });
+
+                startWebcam();
+            } catch (error) {
+                console.error("Error loading MediaPipe:", error);
+                document.getElementById("loading").innerText = "Error loading AI. Please refresh.";
+            }
+        }
+
+        function startWebcam() {
+            const video = document.getElementById("webcam");
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                    video.srcObject = stream;
+                    video.addEventListener("loadeddata", () => {
+                        gameActive = true;
+                        document.getElementById("loading").style.display = "none";
+                        predictWebcam();
+                    });
+                }).catch(err => {
+                    document.getElementById("loading").innerHTML = 
+                        '<div style="color: #ff4757; font-weight: bold; font-size: 28px; margin-bottom: 10px;">CAMERA ACCESS DENIED</div>' +
+                        '<div style="font-size: 16px; margin-top:10px; color: white;">The game requires your camera to track hand movements.<br>Please refresh the page and allow camera access.</div>';
+                });
+            }
+        }
+
+        async function predictWebcam() {
+            const video = document.getElementById("webcam");
+            if (lastVideoTime !== video.currentTime && handLandmarker) {
+                lastVideoTime = video.currentTime;
+                const detections = handLandmarker.detectForVideo(video, performance.now());
+                if (detections.landmarks && detections.landmarks.length > 0) {
+                    const hand = detections.landmarks[0][9];
+                    // Dampening for smoother control
+                    const rawTargetX = (0.5 - hand.x) * 40;
+                    const rawTargetY = ((1 - hand.y) * 16) + 1;
+                    
+                    targetX = targetX * 0.7 + rawTargetX * 0.3;
+                    targetY = targetY * 0.7 + rawTargetY * 0.3;
+                }
+            }
+            if(gameActive || !gameActive) requestAnimationFrame(predictWebcam);
+        }
+
+        // --- GAME LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!gameActive) return;
+
+            // 1. Move Drone
+            drone.position.x += (targetX - drone.position.x) * 0.1;
+            drone.position.y += (targetY - drone.position.y) * 0.1;
+            drone.position.y = Math.max(1, Math.min(18, drone.position.y));
+            drone.position.x = Math.max(-20, Math.min(20, drone.position.x));
+
+            // Dynamic Banking
+            drone.rotation.z = -(targetX - drone.position.x) * 0.15; 
+            drone.rotation.x = (targetY - drone.position.y) * 0.05;
+
+            // Spin Props (Blurred effect)
+            drone.children.forEach(child => {
+                if(child.userData.isProp) child.rotation.y += 1.5;
+            });
+
+            // 2. Move World
+            speed += 0.0003; 
+            const currentSpeed = speed;
+
+            // Move Grid to simulate speed (reset position to loop)
+            floorGrid.position.z += currentSpeed;
+            if(floorGrid.position.z > 10) floorGrid.position.z = 0;
+
+            // Move Particles
+            const positions = particles.geometry.attributes.position.array;
+            for(let i = 2; i < positions.length; i += 3) {
+                positions[i] += currentSpeed * 2; // Particles move faster than trees
+                if(positions[i] > 20) positions[i] = -150; // Reset far back
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            // Trees Logic
+            for (let i = trees.length - 1; i >= 0; i--) {
+                trees[i].position.z += currentSpeed;
+                
+                // Collision
+                const dx = drone.position.x - trees[i].position.x;
+                const dz = drone.position.z - trees[i].position.z;
+                
+                if (Math.abs(dz) < 1.0 && Math.abs(dx) < 2.5 && drone.position.y < (trees[i].userData.radius * 3)) {
+                    gameOver();
+                }
+
+                if (trees[i].position.z > 15) {
+                    scene.remove(trees[i]);
+                    trees.splice(i, 1);
+                    spawnTree(-100); 
+                }
+            }
+
+            // Rings Logic
+            for (let i = rings.length - 1; i >= 0; i--) {
+                rings[i].position.z += currentSpeed;
+                rings[i].rotation.y += 0.02;
+
+                const dist = drone.position.distanceTo(rings[i].position);
+                
+                if (dist < 2.0 && rings[i].userData.active) {
+                    rings[i].userData.active = false;
+                    rings[i].scale.set(0.1, 0.1, 0.1); 
+                    score += 50;
+                    document.getElementById("score").innerText = score;
+                } 
+                
+                if (!rings[i].userData.active) {
+                    scene.remove(rings[i]);
+                    rings.splice(i, 1);
+                } else if (rings[i].position.z > 15) {
+                    scene.remove(rings[i]);
+                    rings.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            document.getElementById("game-over").style.display = "block";
+            document.getElementById("final-score").innerText = score;
+        }
+
+        window.restartGame = function() {
+            score = 0;
+            speed = 0.5;
+            document.getElementById("score").innerText = "0";
+            document.getElementById("game-over").style.display = "none";
+            
+            trees.forEach(t => scene.remove(t));
+            rings.forEach(r => scene.remove(r));
+            trees = [];
+            rings = [];
+            
+            drone.position.set(0, 5, 0);
+            drone.rotation.set(0, 0, 0);
+            targetX = 0;
+            targetY = 5;
+
+            for(let i=0; i<20; i++) spawnTree(-30 - (i*12));
+            
+            gameActive = true;
+        }
+
+        initScene();
+        initHandTracking();
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
