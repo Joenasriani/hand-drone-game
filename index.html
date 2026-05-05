@@ -103,7 +103,7 @@
     </style>
 </head>
 <body>
-
+ 
     <div id="loading">
         <div style="margin-bottom: 20px; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #00d2ff;">CAMERA ACCESS REQUIRED</div>
         <div style="margin-bottom: 15px; color: white;">INITIALIZING SYSTEMS...</div>
@@ -139,11 +139,23 @@
         let floorGrid;
         let gameActive = false;
         let score = 0;
-        let speed = 0.5;
+        let speed = 0.2; // REDUCED: Slower initial speed for easier first-play
         let targetX = 0;
         let targetY = 5;
         let handLandmarker = undefined;
         let lastVideoTime = -1;
+        
+        // Hand tracking smoothing - NEW: Better jitter reduction
+        let smoothedHandX = 0.5;
+        let smoothedHandY = 0.5;
+        const HAND_SMOOTHING = 0.15; // Stronger smoothing for stability
+        const HAND_DEAD_ZONE = 0.04; // Prevent tiny movements from affecting drone
+        
+        // Drone movement smoothing - NEW: Gentler acceleration
+        let smoothedTargetX = 0;
+        let smoothedTargetY = 5;
+        const DRONE_LERP = 0.08; // Slower drone position update for smoother feel
+        const TARGET_LERP = 0.12; // Smoother target tracking
         
         // Colors
         const COLORS = {
@@ -458,19 +470,39 @@
             }
         }
 
+        // NEW: Helper function to apply dead zone filtering
+        function applyDeadZone(value, deadZone) {
+            if (Math.abs(value) < deadZone) return 0;
+            return value > 0 ? value - deadZone : value + deadZone;
+        }
+
         async function predictWebcam() {
             const video = document.getElementById("webcam");
             if (lastVideoTime !== video.currentTime && handLandmarker) {
                 lastVideoTime = video.currentTime;
                 const detections = handLandmarker.detectForVideo(video, performance.now());
                 if (detections.landmarks && detections.landmarks.length > 0) {
-                    const hand = detections.landmarks[0][9];
-                    // Dampening for smoother control
-                    const rawTargetX = (0.5 - hand.x) * 40;
-                    const rawTargetY = ((1 - hand.y) * 16) + 1;
+                    const hand = detections.landmarks[0][9]; // Palm position
                     
-                    targetX = targetX * 0.7 + rawTargetX * 0.3;
-                    targetY = targetY * 0.7 + rawTargetY * 0.3;
+                    // NEW: Multi-stage smoothing for hand position
+                    // Stage 1: Exponential smoothing to reduce jitter
+                    smoothedHandX = smoothedHandX * (1 - HAND_SMOOTHING) + hand.x * HAND_SMOOTHING;
+                    smoothedHandY = smoothedHandY * (1 - HAND_SMOOTHING) + hand.y * HAND_SMOOTHING;
+                    
+                    // Stage 2: Convert to game coordinates
+                    let rawX = (0.5 - smoothedHandX) * 40;
+                    let rawY = ((1 - smoothedHandY) * 16) + 1;
+                    
+                    // Stage 3: Apply dead zone to prevent micro-movements
+                    rawX = applyDeadZone(rawX, 0.5);
+                    rawY = applyDeadZone(rawY, 0.3);
+                    
+                    // Stage 4: Smooth target tracking (smoother drone response)
+                    smoothedTargetX = smoothedTargetX * (1 - TARGET_LERP) + rawX * TARGET_LERP;
+                    smoothedTargetY = smoothedTargetY * (1 - TARGET_LERP) + rawY * TARGET_LERP;
+                    
+                    targetX = smoothedTargetX;
+                    targetY = smoothedTargetY;
                 }
             }
             if(gameActive || !gameActive) requestAnimationFrame(predictWebcam);
@@ -482,23 +514,24 @@
 
             if (!gameActive) return;
 
-            // 1. Move Drone
-            drone.position.x += (targetX - drone.position.x) * 0.1;
-            drone.position.y += (targetY - drone.position.y) * 0.1;
+            // 1. Move Drone - IMPROVED: Gentler, smoother acceleration
+            drone.position.x += (targetX - drone.position.x) * DRONE_LERP;
+            drone.position.y += (targetY - drone.position.y) * DRONE_LERP;
             drone.position.y = Math.max(1, Math.min(18, drone.position.y));
             drone.position.x = Math.max(-20, Math.min(20, drone.position.x));
 
-            // Dynamic Banking
-            drone.rotation.z = -(targetX - drone.position.x) * 0.15; 
-            drone.rotation.x = (targetY - drone.position.y) * 0.05;
+            // Dynamic Banking - IMPROVED: More responsive but smoother rotation
+            drone.rotation.z = -(targetX - drone.position.x) * 0.12; 
+            drone.rotation.x = (targetY - drone.position.y) * 0.04;
 
             // Spin Props (Blurred effect)
             drone.children.forEach(child => {
                 if(child.userData.isProp) child.rotation.y += 1.5;
             });
 
-            // 2. Move World
-            speed += 0.0003; 
+            // 2. Move World - IMPROVED: Slower initial acceleration for easier early game
+            speed += 0.00015; // REDUCED: Much gentler acceleration
+            const currentSpeed = Math.min(speed, 1.5); // Cap speed to prevent chaos later
             const currentSpeed = speed;
 
             // Move Grid to simulate speed (reset position to loop)
@@ -566,7 +599,7 @@
 
         window.restartGame = function() {
             score = 0;
-            speed = 0.5;
+            speed = 0.2; // RESET: Back to slower initial speed
             document.getElementById("score").innerText = "0";
             document.getElementById("game-over").style.display = "none";
             
@@ -577,6 +610,10 @@
             
             drone.position.set(0, 5, 0);
             drone.rotation.set(0, 0, 0);
+            
+            // Reset smoothed values
+            smoothedTargetX = 0;
+            smoothedTargetY = 5;
             targetX = 0;
             targetY = 5;
 
