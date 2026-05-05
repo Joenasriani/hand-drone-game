@@ -1,5 +1,7 @@
 Hand Controlled Drone Game 🛸✋
 
+>> https://joenasriani.github.io/hand-drone-game/
+
 A futuristic, web-based endless runner game where you pilot a drone using real-time hand gestures captured by your webcam. Built with Three.js for 3D graphics and MediaPipe for AI-powered hand tracking.
 
 <!-- Replace the link above with an actual screenshot of your game -->
