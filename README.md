@@ -1,90 +1,92 @@
-Hand Controlled Drone Game 🛸✋
+Hand Controlled Drone Game
 
->> https://joenasriani.github.io/hand-drone-game/
+Live game:
+https://joenasriani.github.io/hand-drone-game/
 
-A futuristic, web-based endless runner game where you pilot a drone using real-time hand gestures captured by your webcam. Built with Three.js for 3D graphics and MediaPipe for AI-powered hand tracking.
+A web-based endless runner game where you pilot a drone using real-time hand gestures captured by your webcam. Built with Three.js for 3D graphics and MediaPipe for hand tracking.
 
-<!-- Replace the link above with an actual screenshot of your game -->
+Requirements:
 
-🎮 How to Play
+- Requires camera permission.
+- Requires an internet connection because Three.js, MediaPipe, and the hand tracking model load from external CDNs.
+- Works best in a modern desktop browser such as Chrome, Edge, or Firefox.
 
-Allow Camera Access: When the game starts, grant permission for the browser to access your webcam.
+How to Play
 
-Show Your Hand: Hold your hand up in front of the camera. The AI will detect your hand landmarks.
+1. Open the game.
+2. Press Start Game.
+3. Allow camera access when prompted.
+4. Hold your hand clearly in front of the webcam.
+5. Move your hand left/right to steer the drone.
+6. Move your hand up/down to change altitude.
+7. Avoid trees.
+8. Fly through gold rings to score points.
+9. Survive as long as possible as the speed increases.
 
-Steer the Drone:
+Features
 
-Move your hand Left/Right to bank the drone.
+- Hand tracking control using MediaPipe.
+- 3D endless runner scene built with Three.js.
+- Procedural tree and ring spawning.
+- Score and speed progression.
+- Responsive canvas resizing.
 
-Move your hand Up/Down to change altitude.
+Tech Stack
 
-Objective:
+- HTML5 / CSS3
+- Three.js
+- MediaPipe Tasks Vision
 
-Avoid the Trees (crashing ends the game).
+Installation and Usage
 
-Fly through Gold Rings to score points.
+This game is a single-file web application. There is no npm install, package.json, or build step required.
 
-Survive as long as possible as the speed increases!
+Run locally:
 
-✨ Features
+1. Run this in the folder containing index.html:
+   python3 -m http.server
+2. Open:
+   http://localhost:8000/
 
-AI Hand Tracking: Uses Google MediaPipe to track hand movements without any external controllers.
+You can also open index.html directly in a browser, but some browsers restrict camera access for local file pages. Running a local server is recommended.
 
-Immersive 3D World: Created with Three.js, featuring a low-poly Synthwave aesthetic with neon grids and dynamic lighting.
+Host online:
 
-Procedural Generation: Trees and rings spawn infinitely as you fly.
+Upload index.html to GitHub Pages, Netlify, Vercel, itch.io, or any static hosting service.
 
-Responsive Design: Adjusts to window resizing.
+Troubleshooting
 
-Dynamic Physics: Smooth banking and acceleration effects based on hand position.
+Camera access denied:
 
-🛠️ Tech Stack
+- Refresh the page.
+- Click Allow when the browser asks for camera permission.
+- Check that the site is not blocked in browser camera settings.
 
-HTML5 / CSS3: Core structure and styling.
+Camera not supported:
 
-Three.js: 3D rendering engine.
+- Use a modern browser with navigator.mediaDevices.getUserMedia support.
+- Try Chrome or Edge if your current browser does not support webcam access.
 
-MediaPipe Tasks Vision: Machine learning model for real-time hand detection.
+MediaPipe failed to load:
 
-🚀 Installation & Usage
+- Check your internet connection.
+- Refresh the page.
+- Make sure CDN requests are not blocked by browser extensions, firewall rules, or privacy settings.
 
-This game is a single-file web application. You don't need a build server or complex installation.
+Performance issues:
 
-Option 1: Run Locally
+- Enable hardware acceleration in your browser.
+- Close heavy background tabs.
+- Use a device with stronger graphics performance when possible.
 
-Clone this repository or download the drone_game.html file.
+Hand not detected:
 
-Open drone_game.html in a modern web browser (Chrome, Edge, or Firefox recommended).
+- Use a well-lit environment.
+- Keep your full hand visible in the video preview.
+- Avoid strong backlighting.
 
-Note: Some browsers restrict camera access for local files (file://). If the camera doesn't load, you may need to run a simple local server.
+License
 
-Using Python (if installed):
+MIT License. See LICENSE for details.
 
-# Run this in the folder containing the file
-python3 -m http.server
-# Then open http://localhost:8000/drone_game.html
-
-
-Using VS Code:
-
-Install the "Live Server" extension.
-
-Right-click the HTML file and select "Open with Live Server".
-
-Option 2: Host Online
-
-Simply upload the drone_game.html file to GitHub Pages, Netlify, or Vercel to play it instantly on the web.
-
-⚠️ Troubleshooting
-
-"Camera Access Denied": Make sure you clicked "Allow" on the browser prompt. Check your browser settings to ensure the site isn't blocked.
-
-Performance Issues: Ensure Hardware Acceleration is enabled in your browser settings. The game runs best on devices with a dedicated GPU.
-
-Hand Not Detected: Ensure your environment is well-lit and your hand is clearly visible within the video frame in the bottom corner.
-
-📝 License
-
-This project is open-source and available under the MIT License.
-
-Created with AI assistance.
+Created with assistance.
