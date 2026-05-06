@@ -141,6 +141,15 @@
 
     soundToggle.addEventListener('click', enableSound);
 
+    function normalizeMissionCopy(doc) {
+      const gameOverEl = doc.getElementById('game-over');
+      if (!gameOverEl) return;
+      const title = gameOverEl.querySelector('h1');
+      const button = gameOverEl.querySelector('button');
+      if (title) title.textContent = 'MISSION FAILED';
+      if (button) button.textContent = 'REBOOT MISSION';
+    }
+
     function hookGameEvents() {
       const doc = frame.contentDocument || frame.contentWindow?.document;
       if (!doc) return;
@@ -149,9 +158,12 @@
       const gameOverEl = doc.getElementById('game-over');
       const handStatusEl = doc.getElementById('hand-status');
 
+      normalizeMissionCopy(doc);
       if (startButton) startButton.addEventListener('click', () => playSound('start'));
 
       setInterval(() => {
+        normalizeMissionCopy(doc);
+
         const score = Number(scoreEl?.textContent || 0);
         if (score > previousScore) playSound('collect');
         previousScore = score;
