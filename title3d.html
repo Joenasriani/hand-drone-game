@@ -8,6 +8,8 @@
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #060817; }
     #game-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 1; background: #060817; }
     #title-3d-overlay { position: fixed; inset: 0; z-index: 50; overflow: hidden; background: radial-gradient(circle at 50% 45%, rgba(0,210,255,.18), transparent 34%), linear-gradient(135deg, rgba(6,8,23,.98), rgba(18,9,39,.96)); display: grid; place-items: center; pointer-events: none; animation: overlayExit .8s ease-in-out 3.2s forwards; perspective: 1100px; }
+    #sound-toggle { position: fixed; top: 16px; right: 16px; z-index: 70; border: 1px solid rgba(0,210,255,.45); border-radius: 999px; padding: 10px 14px; color: #00d2ff; background: rgba(6,8,23,.72); box-shadow: 0 0 22px rgba(0,210,255,.18); font: 800 12px 'Courier New', monospace; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); }
+    #sound-toggle.is-on { color: #00ffd5; border-color: rgba(0,255,213,.6); box-shadow: 0 0 24px rgba(0,255,213,.22); }
     .starfield, .scanlines { position: absolute; inset: 0; pointer-events: none; }
     .starfield { background-image: radial-gradient(circle, rgba(255,255,255,.85) 0 1px, transparent 1.4px), radial-gradient(circle, rgba(0,210,255,.55) 0 1px, transparent 1.2px); background-size: 90px 90px, 150px 150px; background-position: 0 0, 30px 60px; animation: starsMove 3.6s linear forwards; opacity: .55; }
     .scanlines { background: linear-gradient(to bottom, transparent 0 48%, rgba(0,210,255,.08) 50%, transparent 52%); background-size: 100% 8px; mix-blend-mode: screen; opacity: .5; }
@@ -28,11 +30,12 @@
     @keyframes starsMove { from { background-position: 0 0, 30px 60px; } to { background-position: 0 220px, 30px 300px; } }
     @keyframes orbitSpin { to { transform: rotateX(70deg) rotateZ(360deg); } }
     @keyframes overlayExit { to { opacity: 0; visibility: hidden; transform: scale(1.04); } }
-    @media (max-width: 640px) { .title-word { letter-spacing: 4px; } .subtitle-3d { margin-top: 14px; } .holo-floor { bottom: 6vh; height: 180px; } }
+    @media (max-width: 640px) { #sound-toggle { top: 10px; right: 10px; padding: 8px 10px; font-size: 10px; } .title-word { letter-spacing: 4px; } .subtitle-3d { margin-top: 14px; } .holo-floor { bottom: 6vh; height: 180px; } }
   </style>
 </head>
 <body>
   <iframe id="game-frame" src="/index.html" allow="camera; fullscreen" title="Hand Drone XS game"></iframe>
+  <button id="sound-toggle" type="button" aria-pressed="false">Sound Off</button>
   <div id="title-3d-overlay" aria-hidden="true">
     <div class="starfield"></div>
     <div class="scanlines"></div>
@@ -43,5 +46,131 @@
       <div class="subtitle-3d">Simulated 3D Pilot Boot</div>
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+  <script>
+    const frame = document.getElementById('game-frame');
+    const soundToggle = document.getElementById('sound-toggle');
+    let soundEnabled = false;
+    let soundsReady = false;
+    let previousScore = 0;
+    let previousGameOverVisible = false;
+    let previousHandLocked = false;
+    let lastHandSoundAt = 0;
+    const sounds = {};
+
+    function clampSample(value) {
+      return Math.max(-1, Math.min(1, value));
+    }
+
+    function encodeWav(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+      const writeString = (offset, string) => {
+        for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+      };
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        view.setInt16(offset, clampSample(samples[i]) * 0x7fff, true);
+      }
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return 'data:audio/wav;base64,' + btoa(binary);
+    }
+
+    function makeTone({ duration = 0.2, start = 440, end = 440, volume = 0.5, type = 'sine', noise = 0 }) {
+      const sampleRate = 22050;
+      const length = Math.max(1, Math.floor(duration * sampleRate));
+      const samples = new Float32Array(length);
+      for (let i = 0; i < length; i++) {
+        const t = i / sampleRate;
+        const p = i / length;
+        const freq = start + (end - start) * p;
+        const phase = 2 * Math.PI * freq * t;
+        let wave = Math.sin(phase);
+        if (type === 'square') wave = Math.sign(wave || 1);
+        if (type === 'saw') wave = 2 * ((freq * t) % 1) - 1;
+        if (type === 'triangle') wave = 2 * Math.abs(2 * ((freq * t) % 1) - 1) - 1;
+        const attack = Math.min(p / 0.08, 1);
+        const decay = Math.pow(1 - p, 1.75);
+        const envelope = attack * decay;
+        samples[i] = ((wave * (1 - noise)) + ((Math.random() * 2 - 1) * noise)) * envelope * volume;
+      }
+      return encodeWav(samples, sampleRate);
+    }
+
+    function buildSounds() {
+      if (soundsReady || !window.Howl) return;
+      sounds.boot = new Howl({ src: [makeTone({ duration: 0.95, start: 90, end: 360, volume: 0.42, type: 'saw', noise: 0.04 })], volume: 0.55 });
+      sounds.start = new Howl({ src: [makeTone({ duration: 0.32, start: 240, end: 780, volume: 0.38, type: 'triangle' })], volume: 0.6 });
+      sounds.lock = new Howl({ src: [makeTone({ duration: 0.16, start: 760, end: 1180, volume: 0.34, type: 'sine' })], volume: 0.5 });
+      sounds.collect = new Howl({ src: [makeTone({ duration: 0.22, start: 820, end: 1560, volume: 0.42, type: 'triangle' })], volume: 0.7 });
+      sounds.crash = new Howl({ src: [makeTone({ duration: 0.55, start: 160, end: 38, volume: 0.62, type: 'saw', noise: 0.42 })], volume: 0.75 });
+      soundsReady = true;
+    }
+
+    function playSound(name) {
+      if (!soundEnabled) return;
+      buildSounds();
+      if (sounds[name]) sounds[name].play();
+    }
+
+    function enableSound() {
+      buildSounds();
+      soundEnabled = !soundEnabled;
+      Howler.mute(!soundEnabled);
+      soundToggle.classList.toggle('is-on', soundEnabled);
+      soundToggle.setAttribute('aria-pressed', String(soundEnabled));
+      soundToggle.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+      if (soundEnabled) playSound('boot');
+    }
+
+    soundToggle.addEventListener('click', enableSound);
+
+    function hookGameEvents() {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (!doc) return;
+      const startButton = doc.getElementById('start-button');
+      const scoreEl = doc.getElementById('score');
+      const gameOverEl = doc.getElementById('game-over');
+      const handStatusEl = doc.getElementById('hand-status');
+
+      if (startButton) startButton.addEventListener('click', () => playSound('start'));
+
+      setInterval(() => {
+        const score = Number(scoreEl?.textContent || 0);
+        if (score > previousScore) playSound('collect');
+        previousScore = score;
+
+        const gameOverVisible = gameOverEl && getComputedStyle(gameOverEl).display !== 'none';
+        if (gameOverVisible && !previousGameOverVisible) playSound('crash');
+        previousGameOverVisible = Boolean(gameOverVisible);
+
+        const handLocked = Boolean(handStatusEl?.classList.contains('locked'));
+        const now = performance.now();
+        if (handLocked && !previousHandLocked && now - lastHandSoundAt > 1200) {
+          playSound('lock');
+          lastHandSoundAt = now;
+        }
+        previousHandLocked = handLocked;
+      }, 120);
+    }
+
+    frame.addEventListener('load', hookGameEvents);
+  </script>
 </body>
 </html>
