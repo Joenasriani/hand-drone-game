@@ -34,7 +34,7 @@
   </style>
 </head>
 <body>
-  <iframe id="game-frame" src="/index.html" allow="camera; fullscreen" title="Hand Drone XS game"></iframe>
+  <iframe id="game-frame" allow="camera; fullscreen" title="Hand Drone XS game"></iframe>
   <button id="sound-toggle" type="button" aria-pressed="false">Sound Off</button>
   <div id="title-3d-overlay" aria-hidden="true">
     <div class="starfield"></div>
@@ -57,7 +57,24 @@
     let previousGameOverVisible = false;
     let previousHandLocked = false;
     let lastHandSoundAt = 0;
+    let hookIntervalId = null;
     const sounds = {};
+
+    async function loadPatchedGame() {
+      try {
+        const response = await fetch('/index.html', { cache: 'no-store' });
+        let html = await response.text();
+        html = html.replace('let shakeTime = 0, shakeStrength = 0;', 'let shakeTime = 0, shakeStrength = 0, runStartedAt = 0;');
+        html = html.replace('let baseSpeed = 0.15, currentSpeed = baseSpeed, targetX = 0, targetY = 5;', 'let baseSpeed = 0.22, currentSpeed = baseSpeed, targetX = 0, targetY = 5;');
+        html = html.replace('const MAX_SPEED_LEVEL = 8, RINGS_PER_LEVEL = 20, SPEED_INCREMENT = 0.12, MAX_BASE_GAME_SPEED = 2.0;', 'const MAX_SPEED_LEVEL = 12, RINGS_PER_LEVEL = 20, SPEED_INCREMENT = 0.12, TIME_SPEED_INCREMENT = 0.16, MAX_BASE_GAME_SPEED = 2.8;');
+        html = html.replace('function calculateSpeedMultiplier() { return 1 + (currentSpeedLevel - 1) * SPEED_INCREMENT; }', 'function calculateSpeedMultiplier() { const timeLevel = gameActive && runStartedAt ? Math.floor((performance.now() - runStartedAt) / 10000) : 0; return 1 + (currentSpeedLevel - 1) * SPEED_INCREMENT + timeLevel * TIME_SPEED_INCREMENT; }');
+        html = html.replaceAll('gameActive = true;', 'gameActive = true; runStartedAt = performance.now();');
+        frame.srcdoc = html;
+      } catch (error) {
+        console.error('Failed to load patched game. Falling back to static index.html:', error);
+        frame.src = '/index.html';
+      }
+    }
 
     function clampSample(value) {
       return Math.max(-1, Math.min(1, value));
@@ -158,10 +175,11 @@
       const gameOverEl = doc.getElementById('game-over');
       const handStatusEl = doc.getElementById('hand-status');
 
+      if (hookIntervalId) clearInterval(hookIntervalId);
       normalizeMissionCopy(doc);
       if (startButton) startButton.addEventListener('click', () => playSound('start'));
 
-      setInterval(() => {
+      hookIntervalId = setInterval(() => {
         normalizeMissionCopy(doc);
 
         const score = Number(scoreEl?.textContent || 0);
@@ -183,6 +201,7 @@
     }
 
     frame.addEventListener('load', hookGameEvents);
+    loadPatchedGame();
   </script>
 </body>
 </html>
