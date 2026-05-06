@@ -65,8 +65,10 @@
         const response = await fetch('/index.html', { cache: 'no-store' });
         let html = await response.text();
         html = html.replace('let shakeTime = 0, shakeStrength = 0;', 'let shakeTime = 0, shakeStrength = 0, runStartedAt = 0;');
-        html = html.replace('let baseSpeed = 0.15, currentSpeed = baseSpeed, targetX = 0, targetY = 5;', 'let baseSpeed = 0.22, currentSpeed = baseSpeed, targetX = 0, targetY = 5;');
-        html = html.replace('const MAX_SPEED_LEVEL = 8, RINGS_PER_LEVEL = 20, SPEED_INCREMENT = 0.12, MAX_BASE_GAME_SPEED = 2.0;', 'const MAX_SPEED_LEVEL = 12, RINGS_PER_LEVEL = 20, SPEED_INCREMENT = 0.12, TIME_SPEED_INCREMENT = 0.16, MAX_BASE_GAME_SPEED = 2.8;');
+        html = html.replace('let baseSpeed = 0.15, currentSpeed = baseSpeed, targetX = 0, targetY = 5;', 'let baseSpeed = 0.38, currentSpeed = baseSpeed, targetX = 0, targetY = 5;');
+        html = html.replace('const HAND_SMOOTHING = 0.12, HAND_DEAD_ZONE_X = 0.6, HAND_DEAD_ZONE_Y = 0.4;', 'const HAND_SMOOTHING = 0.24, HAND_DEAD_ZONE_X = 0.35, HAND_DEAD_ZONE_Y = 0.18;');
+        html = html.replace('const DRONE_LERP = 0.095, TARGET_LERP = 0.11;', 'const DRONE_LERP = 0.22, TARGET_LERP = 0.24;');
+        html = html.replace('const MAX_SPEED_LEVEL = 8, RINGS_PER_LEVEL = 20, SPEED_INCREMENT = 0.12, MAX_BASE_GAME_SPEED = 2.0;', 'const MAX_SPEED_LEVEL = 14, RINGS_PER_LEVEL = 20, SPEED_INCREMENT = 0.16, TIME_SPEED_INCREMENT = 0.24, MAX_BASE_GAME_SPEED = 4.2;');
         html = html.replace('function calculateSpeedMultiplier() { return 1 + (currentSpeedLevel - 1) * SPEED_INCREMENT; }', 'function calculateSpeedMultiplier() { const timeLevel = gameActive && runStartedAt ? Math.floor((performance.now() - runStartedAt) / 10000) : 0; return 1 + (currentSpeedLevel - 1) * SPEED_INCREMENT + timeLevel * TIME_SPEED_INCREMENT; }');
         html = html.replaceAll('gameActive = true;', 'gameActive = true; runStartedAt = performance.now();');
         frame.srcdoc = html;
