@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hand Drone XS</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #060817; }
+    #game-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 1; background: #060817; }
+    #title-3d-overlay { position: fixed; inset: 0; z-index: 50; overflow: hidden; background: radial-gradient(circle at 50% 45%, rgba(0,210,255,.18), transparent 34%), linear-gradient(135deg, rgba(6,8,23,.98), rgba(18,9,39,.96)); display: grid; place-items: center; pointer-events: none; animation: overlayExit .8s ease-in-out 3.2s forwards; perspective: 1100px; }
+    .starfield, .scanlines { position: absolute; inset: 0; pointer-events: none; }
+    .starfield { background-image: radial-gradient(circle, rgba(255,255,255,.85) 0 1px, transparent 1.4px), radial-gradient(circle, rgba(0,210,255,.55) 0 1px, transparent 1.2px); background-size: 90px 90px, 150px 150px; background-position: 0 0, 30px 60px; animation: starsMove 3.6s linear forwards; opacity: .55; }
+    .scanlines { background: linear-gradient(to bottom, transparent 0 48%, rgba(0,210,255,.08) 50%, transparent 52%); background-size: 100% 8px; mix-blend-mode: screen; opacity: .5; }
+    .title-stage { position: relative; transform-style: preserve-3d; animation: stageEnter 3.2s cubic-bezier(.12,.75,.2,1) forwards; }
+    .title-word { position: relative; font: 950 clamp(48px, 11vw, 160px)/.9 Impact, Haettenschweiler, 'Arial Black', sans-serif; letter-spacing: clamp(4px, .9vw, 18px); color: #00d2ff; text-align: center; text-transform: uppercase; transform-style: preserve-3d; transform: rotateX(15deg) rotateY(-18deg) translateZ(80px); text-shadow: 0 1px 0 #0099c7, 0 2px 0 #0088b4, 0 3px 0 #0073a0, 0 4px 0 #005c86, 0 8px 18px rgba(0,210,255,.7), 0 0 48px rgba(0,210,255,.55), 0 0 90px rgba(255,71,87,.42); animation: titleFloat 2.7s ease-in-out infinite alternate; }
+    .title-word::before, .title-word::after { content: attr(data-text); position: absolute; inset: 0; pointer-events: none; }
+    .title-word::before { color: rgba(255,71,87,.7); transform: translate3d(12px, 12px, -42px); filter: blur(.2px); z-index: -1; }
+    .title-word::after { color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,.28); transform: translate3d(-9px, -7px, 32px); filter: drop-shadow(0 0 16px rgba(255,255,255,.25)); }
+    .subtitle-3d { margin-top: 22px; font: 800 clamp(13px, 2vw, 24px)/1.2 'Courier New', monospace; letter-spacing: clamp(4px, .7vw, 12px); color: #ff6b81; text-align: center; text-transform: uppercase; text-shadow: 0 0 16px rgba(255,71,87,.8), 0 0 36px rgba(255,71,87,.45); transform: rotateX(10deg) translateZ(25px); animation: subtitleBlink 1.1s steps(2) infinite; }
+    .holo-floor { position: absolute; width: min(900px, 90vw); height: 260px; bottom: 8vh; left: 50%; transform: translateX(-50%) rotateX(72deg); background-image: linear-gradient(rgba(0,210,255,.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255,71,87,.18) 1px, transparent 1px); background-size: 46px 46px; border: 1px solid rgba(0,210,255,.25); box-shadow: 0 0 50px rgba(0,210,255,.18); animation: gridSlide 1.2s linear infinite; opacity: .55; }
+    .orbit { position: absolute; width: min(720px, 82vw); height: min(720px, 82vw); border: 1px solid rgba(0,210,255,.28); border-radius: 50%; transform: rotateX(70deg) rotateZ(0deg); box-shadow: 0 0 40px rgba(0,210,255,.14), inset 0 0 40px rgba(255,71,87,.08); animation: orbitSpin 4s linear infinite; }
+    .orbit::before, .orbit::after { content: ''; position: absolute; width: 13px; height: 13px; border-radius: 50%; background: #ffd700; box-shadow: 0 0 24px #ffd700; }
+    .orbit::before { left: 50%; top: -7px; } .orbit::after { right: 12%; bottom: 10%; background: #00ffd5; box-shadow: 0 0 24px #00ffd5; }
+    @keyframes stageEnter { 0% { transform: translateZ(-520px) rotateX(32deg) rotateY(-42deg) scale(.55); opacity: 0; } 45% { opacity: 1; } 70% { transform: translateZ(40px) rotateX(0deg) rotateY(0deg) scale(1.04); } 100% { transform: translateZ(0) rotateX(0deg) rotateY(0deg) scale(1); opacity: 1; } }
+    @keyframes titleFloat { from { transform: rotateX(15deg) rotateY(-18deg) translateZ(80px) translateY(-3px); } to { transform: rotateX(12deg) rotateY(16deg) translateZ(95px) translateY(7px); } }
+    @keyframes subtitleBlink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: .58; } }
+    @keyframes gridSlide { from { background-position: 0 0, 0 0; } to { background-position: 0 46px, 46px 0; } }
+    @keyframes starsMove { from { background-position: 0 0, 30px 60px; } to { background-position: 0 220px, 30px 300px; } }
+    @keyframes orbitSpin { to { transform: rotateX(70deg) rotateZ(360deg); } }
+    @keyframes overlayExit { to { opacity: 0; visibility: hidden; transform: scale(1.04); } }
+    @media (max-width: 640px) { .title-word { letter-spacing: 4px; } .subtitle-3d { margin-top: 14px; } .holo-floor { bottom: 6vh; height: 180px; } }
+  </style>
+</head>
+<body>
+  <iframe id="game-frame" src="/index.html" allow="camera; fullscreen" title="Hand Drone XS game"></iframe>
+  <div id="title-3d-overlay" aria-hidden="true">
+    <div class="starfield"></div>
+    <div class="scanlines"></div>
+    <div class="holo-floor"></div>
+    <div class="orbit"></div>
+    <div class="title-stage">
+      <div class="title-word" data-text="HAND DRONE XS">HAND DRONE XS</div>
+      <div class="subtitle-3d">Simulated 3D Pilot Boot</div>
+    </div>
+  </div>
+</body>
+</html>
