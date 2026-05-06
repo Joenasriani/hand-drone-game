@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/title3d.html"
+      "destination": "/play.html"
     }
   ],
   "headers": [
