@@ -36,4 +36,22 @@
   };
 
   window.GAME_CONFIG = Object.assign({}, defaults, window.GAME_CONFIG || {});
+
+  // Premium cockpit visual identity pass.
+  // Loaded through config.js so both index.html and play.html receive the same theme
+  // without touching gameplay, MediaPipe, movement, collision, or renderer logic.
+  const injectPremiumTheme = () => {
+    if (document.querySelector('link[data-premium-theme="hand-drone-xs"]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'premium.css';
+    link.dataset.premiumTheme = 'hand-drone-xs';
+    document.head.appendChild(link);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectPremiumTheme, { once: true });
+  } else {
+    injectPremiumTheme();
+  }
 })();
