@@ -49,6 +49,15 @@
     document.head.appendChild(link);
   };
 
+  const injectProceduralSfx = () => {
+    if (document.querySelector('script[data-procedural-sfx="hand-drone-xs"]')) return;
+    const script = document.createElement('script');
+    script.src = 'audio-sfx.js';
+    script.defer = true;
+    script.dataset.proceduralSfx = 'hand-drone-xs';
+    document.head.appendChild(script);
+  };
+
   // Startup guidance + real visible loading progress.
   // UX-only layer. Does not change gameplay, tracking math, camera access, movement,
   // collision, renderer, or controls.
@@ -332,10 +341,12 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       injectPremiumTheme();
+      injectProceduralSfx();
       injectStartupGuidanceAndLoading();
     }, { once: true });
   } else {
     injectPremiumTheme();
+    injectProceduralSfx();
     injectStartupGuidanceAndLoading();
   }
 })();
