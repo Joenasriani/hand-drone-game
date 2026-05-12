@@ -12,6 +12,12 @@
   const SCAN_INTERVAL_MS = 500;
   const DEFAULT_MUSIC_VOLUME = 0.45;
   const MUSIC_URLS = [
+    './Battlefield%20Ascent.mp3',
+    './Battlefield Ascent.mp3',
+    'Battlefield%20Ascent.mp3',
+    'Battlefield Ascent.mp3',
+    '/hand-drone-game/Battlefield%20Ascent.mp3',
+    '/hand-drone-game/Battlefield Ascent.mp3',
     './public/music/Battlefield%20Ascent.mp3',
     './public/music/Battlefield Ascent.mp3',
     '/hand-drone-game/public/music/Battlefield%20Ascent.mp3',
