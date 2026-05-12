@@ -1,7 +1,7 @@
 // audio-sfx.js
-// High-end browser-safe SFX + local music folder startup player for Hand Drone XS.
-// SFX are generated through Web Audio so no unverified external URLs are used.
-// Music is loaded from local /music or /public/music candidates and starts on Start Game.
+// Premium procedural SFX + local music folder startup player for Hand Drone XS.
+// Sound direction: luxury sci-fi cockpit, tight transient, short cinematic tails,
+// subtle stereo movement, no toy synth blips, no external unverified audio URLs.
 
 (function () {
   let ctx;
@@ -17,6 +17,8 @@
   let lastLockAt = 0;
   let lastGameOver = false;
   let pollTimer = null;
+  let masterBus;
+  let masterComp;
 
   const MUSIC_CANDIDATES = [
     './public/music/Battlefield%20Ascent.mp3',
@@ -28,156 +30,153 @@
     './music/Battlefield%20Ascent.mp3',
     './music/Battlefield Ascent.mp3',
     '/music/Battlefield%20Ascent.mp3',
-    '/music/Battlefield Ascent.mp3',
-    './music/gameplay.mp3',
-    './music/gameplay.ogg',
-    './music/music.mp3',
-    './music/music.ogg',
-    './music/background.mp3',
-    './music/background.ogg',
-    './music/Color%20Parade.mp3',
-    './music/Color Parade.mp3',
-    './music/1.mp3',
-    './music/1.ogg',
-    '/music/gameplay.mp3',
-    '/music/gameplay.ogg',
-    '/music/music.mp3',
-    '/music/music.ogg',
-    '/music/background.mp3',
-    '/music/background.ogg',
-    '/music/Color%20Parade.mp3',
-    '/music/Color Parade.mp3',
-    '/music/1.mp3',
-    '/music/1.ogg',
-    './public/music/gameplay.mp3',
-    './public/music/gameplay.ogg',
-    './public/music/music.mp3',
-    './public/music/music.ogg',
-    './public/music/background.mp3',
-    './public/music/background.ogg',
-    './public/music/Color%20Parade.mp3',
-    './public/music/Color Parade.mp3',
-    './public/music/1.mp3',
-    './public/music/1.ogg',
-    '/public/music/gameplay.mp3',
-    '/public/music/gameplay.ogg',
-    '/public/music/music.mp3',
-    '/public/music/music.ogg',
-    '/public/music/background.mp3',
-    '/public/music/background.ogg',
-    '/public/music/Color%20Parade.mp3',
-    '/public/music/Color Parade.mp3',
-    '/public/music/1.mp3',
-    '/public/music/1.ogg'
+    '/music/Battlefield Ascent.mp3'
   ];
 
   function getCtx() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterBus = ctx.createGain();
+      masterBus.gain.value = 0.92;
+      masterComp = ctx.createDynamicsCompressor();
+      masterComp.threshold.value = -18;
+      masterComp.knee.value = 18;
+      masterComp.ratio.value = 3.4;
+      masterComp.attack.value = 0.003;
+      masterComp.release.value = 0.16;
+      masterBus.connect(masterComp).connect(ctx.destination);
+    }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
   }
 
-  function createDynamicsChain(c) {
-    const comp = c.createDynamicsCompressor();
-    comp.threshold.value = -24;
-    comp.knee.value = 22;
-    comp.ratio.value = 4;
-    comp.attack.value = 0.006;
-    comp.release.value = 0.18;
-    return comp;
+  function now() {
+    return getCtx().currentTime;
   }
 
-  function gainNode(c, volume, start) {
-    const gain = c.createGain();
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.012);
-    return gain;
+  function envGain(c, start, attack, hold, release, peak) {
+    const g = c.createGain();
+    const min = 0.0001;
+    g.gain.setValueAtTime(min, start);
+    g.gain.exponentialRampToValueAtTime(Math.max(min, peak), start + attack);
+    g.gain.setValueAtTime(Math.max(min, peak), start + attack + hold);
+    g.gain.exponentialRampToValueAtTime(min, start + attack + hold + release);
+    return g;
   }
 
-  function osc({ freq = 440, end = freq, duration = 0.16, type = 'sine', volume = 0.12, delay = 0, pan = 0, filter = 4200 }) {
+  function makeFilter(c, type, freq, q) {
+    const f = c.createBiquadFilter();
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    return f;
+  }
+
+  function makePan(c, pan) {
+    if (!c.createStereoPanner) return null;
+    const p = c.createStereoPanner();
+    p.pan.value = pan;
+    return p;
+  }
+
+  function connectChain(source, nodes) {
+    let prev = source;
+    nodes.filter(Boolean).forEach((node) => {
+      prev.connect(node);
+      prev = node;
+    });
+    prev.connect(masterBus);
+  }
+
+  function tone({ freq = 440, to = freq, dur = 0.14, type = 'sine', vol = 0.08, at = 0, pan = 0, filter = 4200, q = 0.8, attack = 0.006, release = 0.12 }) {
     if (!enabled) return;
     const c = getCtx();
-    const t = c.currentTime + delay;
+    const t = now() + at;
     const o = c.createOscillator();
-    const f = c.createBiquadFilter();
-    const p = c.createStereoPanner ? c.createStereoPanner() : null;
-    const g = gainNode(c, volume, t);
-    const comp = createDynamicsChain(c);
+    const f = makeFilter(c, 'lowpass', filter, q);
+    const p = makePan(c, pan);
+    const g = envGain(c, t, attack, 0.002, release, vol);
     o.type = type;
     o.frequency.setValueAtTime(freq, t);
-    o.frequency.exponentialRampToValueAtTime(Math.max(20, end), t + duration);
-    f.type = 'lowpass';
-    f.frequency.setValueAtTime(filter, t);
-    f.Q.setValueAtTime(0.8, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    if (p) p.pan.setValueAtTime(pan, t);
-    o.connect(f);
-    if (p) f.connect(p).connect(g); else f.connect(g);
-    g.connect(comp).connect(c.destination);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, to), t + dur);
+    connectChain(o, [f, p, g]);
     o.start(t);
-    o.stop(t + duration + 0.03);
+    o.stop(t + dur + release + 0.04);
   }
 
-  function noise({ duration = 0.22, volume = 0.08, filter = 1200, delay = 0, pan = 0, type = 'lowpass' }) {
+  function metallicPing({ freq = 880, dur = 0.16, vol = 0.06, at = 0, pan = 0 }) {
+    tone({ freq, to: freq * 1.02, dur, type: 'sine', vol, at, pan, filter: 7200, q: 1.2, release: dur });
+    tone({ freq: freq * 1.505, to: freq * 1.48, dur: dur * 0.86, type: 'triangle', vol: vol * 0.42, at: at + 0.006, pan: -pan * 0.6, filter: 6400, q: 0.9, release: dur * 0.7 });
+    tone({ freq: freq * 2.01, to: freq * 1.86, dur: dur * 0.55, type: 'sine', vol: vol * 0.22, at: at + 0.012, pan: pan * 0.8, filter: 8400, q: 0.7, release: dur * 0.5 });
+  }
+
+  function noiseBurst({ dur = 0.18, vol = 0.045, at = 0, pan = 0, filter = 2400, type = 'bandpass', q = 0.9, attack = 0.004, release = 0.14 }) {
     if (!enabled) return;
     const c = getCtx();
-    const t = c.currentTime + delay;
-    const len = Math.max(1, Math.floor(c.sampleRate * duration));
+    const t = now() + at;
+    const len = Math.max(1, Math.floor(c.sampleRate * dur));
     const buffer = c.createBuffer(1, len, c.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < len; i++) {
       const p = i / len;
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - p, 1.8);
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - p, 2.2);
     }
     const src = c.createBufferSource();
-    const f = c.createBiquadFilter();
-    const panNode = c.createStereoPanner ? c.createStereoPanner() : null;
-    const g = gainNode(c, volume, t);
-    const comp = createDynamicsChain(c);
-    f.type = type;
-    f.frequency.setValueAtTime(filter, t);
-    f.frequency.exponentialRampToValueAtTime(Math.max(60, filter * 0.32), t + duration);
-    f.Q.setValueAtTime(0.7, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    if (panNode) panNode.pan.setValueAtTime(pan, t);
+    const f = makeFilter(c, type, filter, q);
+    const p = makePan(c, pan);
+    const g = envGain(c, t, attack, 0.001, release, vol);
     src.buffer = buffer;
-    src.connect(f);
-    if (panNode) f.connect(panNode).connect(g); else f.connect(g);
-    g.connect(comp).connect(c.destination);
+    if (type === 'lowpass') f.frequency.exponentialRampToValueAtTime(Math.max(80, filter * 0.26), t + dur);
+    if (type === 'bandpass') f.frequency.exponentialRampToValueAtTime(Math.max(160, filter * 0.58), t + dur);
+    connectChain(src, [f, p, g]);
     src.start(t);
-    src.stop(t + duration + 0.03);
+    src.stop(t + dur + release + 0.04);
+  }
+
+  function subDrop({ from = 120, to = 42, dur = 0.42, vol = 0.09, at = 0 }) {
+    tone({ freq: from, to, dur, type: 'sine', vol, at, pan: 0, filter: 360, q: 0.7, attack: 0.012, release: dur * 0.8 });
   }
 
   const sfx = {
     boot() {
-      osc({ freq: 64, end: 108, duration: 0.46, type: 'sine', volume: 0.15, filter: 900 });
-      osc({ freq: 360, end: 620, duration: 0.34, type: 'triangle', volume: 0.052, delay: 0.08, pan: -0.18, filter: 2600 });
-      osc({ freq: 910, end: 1320, duration: 0.2, type: 'sine', volume: 0.024, delay: 0.18, pan: 0.22, filter: 5400 });
-      noise({ duration: 0.52, volume: 0.018, filter: 2400, type: 'bandpass' });
+      subDrop({ from: 74, to: 118, dur: 0.42, vol: 0.11 });
+      noiseBurst({ dur: 0.42, vol: 0.015, filter: 3600, type: 'bandpass', pan: -0.18, release: 0.26 });
+      metallicPing({ freq: 520, dur: 0.22, vol: 0.038, at: 0.08, pan: -0.18 });
+      metallicPing({ freq: 760, dur: 0.24, vol: 0.032, at: 0.2, pan: 0.16 });
+      tone({ freq: 1480, to: 1180, dur: 0.13, type: 'sine', vol: 0.014, at: 0.36, pan: 0.22, filter: 9000, release: 0.12 });
     },
+
     start() {
-      osc({ freq: 96, end: 154, duration: 0.24, type: 'sine', volume: 0.12, filter: 720 });
-      osc({ freq: 540, end: 920, duration: 0.2, type: 'triangle', volume: 0.065, delay: 0.04, pan: -0.1, filter: 3800 });
-      osc({ freq: 1320, end: 1760, duration: 0.14, type: 'sine', volume: 0.025, delay: 0.08, pan: 0.16, filter: 6200 });
-      noise({ duration: 0.18, volume: 0.018, filter: 4200, delay: 0.02, type: 'bandpass' });
+      subDrop({ from: 92, to: 142, dur: 0.28, vol: 0.078 });
+      noiseBurst({ dur: 0.16, vol: 0.025, filter: 5200, type: 'bandpass', pan: -0.12, release: 0.12 });
+      metallicPing({ freq: 620, dur: 0.18, vol: 0.044, at: 0.035, pan: -0.1 });
+      metallicPing({ freq: 1040, dur: 0.16, vol: 0.03, at: 0.11, pan: 0.14 });
+      tone({ freq: 2100, to: 1560, dur: 0.12, type: 'sine', vol: 0.012, at: 0.18, pan: 0.2, filter: 9200, release: 0.08 });
     },
-    lock() {
-      osc({ freq: 720, end: 705, duration: 0.1, type: 'sine', volume: 0.052, pan: -0.08, filter: 3200 });
-      osc({ freq: 1140, end: 960, duration: 0.14, type: 'sine', volume: 0.04, delay: 0.03, pan: 0.1, filter: 4600 });
-    },
-    collect() {
-      osc({ freq: 690, end: 1180, duration: 0.13, type: 'sine', volume: 0.07, pan: -0.12, filter: 4500 });
-      osc({ freq: 1080, end: 1740, duration: 0.18, type: 'triangle', volume: 0.045, delay: 0.025, pan: 0.16, filter: 6200 });
-      noise({ duration: 0.12, volume: 0.012, filter: 6200, delay: 0.04, type: 'highpass' });
-    },
-    crash() {
-      noise({ duration: 0.42, volume: 0.09, filter: 1400, type: 'lowpass' });
-      osc({ freq: 146, end: 52, duration: 0.52, type: 'sawtooth', volume: 0.082, filter: 620 });
-      osc({ freq: 48, end: 36, duration: 0.62, type: 'sine', volume: 0.07, delay: 0.03, filter: 220 });
-    },
+
     sweep() {
-      noise({ duration: 0.2, volume: 0.018, filter: 5200, type: 'bandpass' });
-      osc({ freq: 980, end: 420, duration: 0.2, type: 'sine', volume: 0.022, filter: 5000 });
+      noiseBurst({ dur: 0.28, vol: 0.016, filter: 6200, type: 'bandpass', pan: 0.18, release: 0.2 });
+      tone({ freq: 1400, to: 360, dur: 0.24, type: 'sine', vol: 0.02, at: 0.02, pan: -0.12, filter: 7600, release: 0.14 });
+    },
+
+    lock() {
+      metallicPing({ freq: 840, dur: 0.13, vol: 0.038, pan: -0.08 });
+      tone({ freq: 1560, to: 1320, dur: 0.1, type: 'sine', vol: 0.018, at: 0.045, pan: 0.12, filter: 7600, release: 0.09 });
+      noiseBurst({ dur: 0.08, vol: 0.006, filter: 5000, type: 'highpass', at: 0.03, release: 0.08 });
+    },
+
+    collect() {
+      metallicPing({ freq: 760, dur: 0.15, vol: 0.044, pan: -0.14 });
+      metallicPing({ freq: 1160, dur: 0.16, vol: 0.034, at: 0.042, pan: 0.18 });
+      tone({ freq: 1880, to: 2360, dur: 0.12, type: 'sine', vol: 0.012, at: 0.075, pan: 0.08, filter: 9600, release: 0.1 });
+      noiseBurst({ dur: 0.1, vol: 0.009, filter: 7600, type: 'highpass', at: 0.016, pan: 0.12, release: 0.08 });
+    },
+
+    crash() {
+      noiseBurst({ dur: 0.36, vol: 0.075, filter: 1500, type: 'lowpass', pan: -0.08, release: 0.32 });
+      subDrop({ from: 156, to: 38, dur: 0.58, vol: 0.085, at: 0.02 });
+      tone({ freq: 340, to: 98, dur: 0.42, type: 'sawtooth', vol: 0.035, at: 0.03, pan: 0.08, filter: 680, release: 0.35 });
+      noiseBurst({ dur: 0.62, vol: 0.018, filter: 420, type: 'lowpass', at: 0.16, pan: 0.04, release: 0.5 });
     }
   };
 
@@ -238,8 +237,8 @@
     const musicToggle = document.getElementById('music-toggle');
     const musicVolume = document.getElementById('music-volume');
 
-    if (soundToggle && soundToggle.dataset.highEndSfxHooked !== 'true') {
-      soundToggle.dataset.highEndSfxHooked = 'true';
+    if (soundToggle && soundToggle.dataset.premiumSfxHooked !== 'true') {
+      soundToggle.dataset.premiumSfxHooked = 'true';
       soundToggle.addEventListener('click', () => {
         const willEnable = !soundToggle.classList.contains('is-on');
         setEnabled(willEnable);
@@ -277,12 +276,12 @@
     frame.addEventListener('load', () => {
       const doc = frame.contentDocument || frame.contentWindow?.document;
       const start = doc?.getElementById('start-button');
-      if (start && start.dataset.highEndSfxHooked !== 'true') {
-        start.dataset.highEndSfxHooked = 'true';
+      if (start && start.dataset.premiumSfxHooked !== 'true') {
+        start.dataset.premiumSfxHooked = 'true';
         start.addEventListener('click', () => {
           setEnabled(true);
           setTimeout(() => sfx.start(), 0);
-          setTimeout(() => sfx.sweep(), 65);
+          setTimeout(() => sfx.sweep(), 70);
           playLocalMusicOnStart();
         }, true);
       }
@@ -299,10 +298,10 @@
 
       const hand = doc.getElementById('hand-status');
       const locked = Boolean(hand?.classList.contains('locked'));
-      const now = performance.now();
-      if (locked && !lastHandLocked && now - lastLockAt > 900) {
+      const t = performance.now();
+      if (locked && !lastHandLocked && t - lastLockAt > 900) {
         sfx.lock();
-        lastLockAt = now;
+        lastLockAt = t;
       }
       lastHandLocked = locked;
 
