@@ -1,17 +1,17 @@
 // audio-sfx.js
-// Premium procedural SFX + local music folder startup player for Hand Drone XS.
-// Sound direction: luxury sci-fi cockpit, tight transient, short cinematic tails,
-// subtle stereo movement, no toy synth blips, no external unverified audio URLs.
+// Premium procedural SFX only for Hand Drone XS.
+// Music ownership lives only in audio-start-unlock.js.
 
 (function () {
+  'use strict';
+
+  // ===== SECTION: CONSTANTS =====
+  const SFX_POLL_MS = 100;
+  const LOCK_COOLDOWN_MS = 900;
+
+  // ===== SECTION: GLOBAL STATE =====
   let ctx;
   let enabled = false;
-  let musicEnabled = true;
-  let localMusicReady = false;
-  let localMusicFailed = false;
-  let localMusicStarted = false;
-  let musicEl = null;
-  let musicGain = 0.38;
   let lastScore = 0;
   let lastHandLocked = false;
   let lastLockAt = 0;
@@ -20,19 +20,7 @@
   let masterBus;
   let masterComp;
 
-  const MUSIC_CANDIDATES = [
-    './public/music/Battlefield%20Ascent.mp3',
-    './public/music/Battlefield Ascent.mp3',
-    '/hand-drone-game/public/music/Battlefield%20Ascent.mp3',
-    '/hand-drone-game/public/music/Battlefield Ascent.mp3',
-    '/public/music/Battlefield%20Ascent.mp3',
-    '/public/music/Battlefield Ascent.mp3',
-    './music/Battlefield%20Ascent.mp3',
-    './music/Battlefield Ascent.mp3',
-    '/music/Battlefield%20Ascent.mp3',
-    '/music/Battlefield Ascent.mp3'
-  ];
-
+  // ===== SECTION: AUDIO GRAPH HELPERS =====
   function getCtx() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -46,7 +34,7 @@
       masterComp.release.value = 0.16;
       masterBus.connect(masterComp).connect(ctx.destination);
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     return ctx;
   }
 
@@ -88,6 +76,7 @@
     prev.connect(masterBus);
   }
 
+  // ===== SECTION: SFX SYNTHESIS =====
   function tone({ freq = 440, to = freq, dur = 0.14, type = 'sine', vol = 0.08, at = 0, pan = 0, filter = 4200, q = 0.8, attack = 0.006, release = 0.12 }) {
     if (!enabled) return;
     const c = getCtx();
@@ -126,8 +115,6 @@
     const p = makePan(c, pan);
     const g = envGain(c, t, attack, 0.001, release, vol);
     src.buffer = buffer;
-    if (type === 'lowpass') f.frequency.exponentialRampToValueAtTime(Math.max(80, filter * 0.26), t + dur);
-    if (type === 'bandpass') f.frequency.exponentialRampToValueAtTime(Math.max(160, filter * 0.58), t + dur);
     connectChain(src, [f, p, g]);
     src.start(t);
     src.stop(t + dur + release + 0.04);
@@ -137,6 +124,7 @@
     tone({ freq: from, to, dur, type: 'sine', vol, at, pan: 0, filter: 360, q: 0.7, attack: 0.012, release: dur * 0.8 });
   }
 
+  // ===== SECTION: SFX CUES =====
   const sfx = {
     boot() {
       subDrop({ from: 74, to: 118, dur: 0.42, vol: 0.11 });
@@ -145,7 +133,6 @@
       metallicPing({ freq: 760, dur: 0.24, vol: 0.032, at: 0.2, pan: 0.16 });
       tone({ freq: 1480, to: 1180, dur: 0.13, type: 'sine', vol: 0.014, at: 0.36, pan: 0.22, filter: 9000, release: 0.12 });
     },
-
     start() {
       subDrop({ from: 92, to: 142, dur: 0.28, vol: 0.078 });
       noiseBurst({ dur: 0.16, vol: 0.025, filter: 5200, type: 'bandpass', pan: -0.12, release: 0.12 });
@@ -153,25 +140,21 @@
       metallicPing({ freq: 1040, dur: 0.16, vol: 0.03, at: 0.11, pan: 0.14 });
       tone({ freq: 2100, to: 1560, dur: 0.12, type: 'sine', vol: 0.012, at: 0.18, pan: 0.2, filter: 9200, release: 0.08 });
     },
-
     sweep() {
       noiseBurst({ dur: 0.28, vol: 0.016, filter: 6200, type: 'bandpass', pan: 0.18, release: 0.2 });
       tone({ freq: 1400, to: 360, dur: 0.24, type: 'sine', vol: 0.02, at: 0.02, pan: -0.12, filter: 7600, release: 0.14 });
     },
-
     lock() {
       metallicPing({ freq: 840, dur: 0.13, vol: 0.038, pan: -0.08 });
       tone({ freq: 1560, to: 1320, dur: 0.1, type: 'sine', vol: 0.018, at: 0.045, pan: 0.12, filter: 7600, release: 0.09 });
       noiseBurst({ dur: 0.08, vol: 0.006, filter: 5000, type: 'highpass', at: 0.03, release: 0.08 });
     },
-
     collect() {
       metallicPing({ freq: 760, dur: 0.15, vol: 0.044, pan: -0.14 });
       metallicPing({ freq: 1160, dur: 0.16, vol: 0.034, at: 0.042, pan: 0.18 });
       tone({ freq: 1880, to: 2360, dur: 0.12, type: 'sine', vol: 0.012, at: 0.075, pan: 0.08, filter: 9600, release: 0.1 });
       noiseBurst({ dur: 0.1, vol: 0.009, filter: 7600, type: 'highpass', at: 0.016, pan: 0.12, release: 0.08 });
     },
-
     crash() {
       noiseBurst({ dur: 0.36, vol: 0.075, filter: 1500, type: 'lowpass', pan: -0.08, release: 0.32 });
       subDrop({ from: 156, to: 38, dur: 0.58, vol: 0.085, at: 0.02 });
@@ -180,152 +163,82 @@
     }
   };
 
+  // ===== SECTION: GAME DOM HELPERS =====
   function setEnabled(next) {
     enabled = Boolean(next);
     if (enabled) getCtx();
   }
 
-  function createLocalMusicElement() {
-    if (musicEl) return musicEl;
-    musicEl = document.createElement('audio');
-    musicEl.preload = 'auto';
-    musicEl.loop = true;
-    musicEl.volume = musicGain;
-    musicEl.style.display = 'none';
-    document.body.appendChild(musicEl);
-    return musicEl;
-  }
-
-  function preloadLocalMusic() {
-    const el = createLocalMusicElement();
-    if (localMusicReady || localMusicFailed) return;
-    let index = 0;
-    const tryNext = () => {
-      if (index >= MUSIC_CANDIDATES.length) {
-        localMusicFailed = true;
-        console.warn('No playable local music file found in /music or /public/music. Procedural music fallback may continue.');
-        return;
-      }
-      const src = MUSIC_CANDIDATES[index++];
-      el.src = src;
-      el.load();
-    };
-    el.addEventListener('canplaythrough', () => {
-      localMusicReady = true;
-      console.info('Local gameplay music buffered:', el.currentSrc || el.src);
-    });
-    el.addEventListener('error', tryNext);
-    tryNext();
-  }
-
-  async function playLocalMusicOnStart() {
-    if (!musicEnabled || localMusicStarted) return;
-    const el = createLocalMusicElement();
-    preloadLocalMusic();
-    el.volume = musicGain;
-    try {
-      el.currentTime = 0;
-      await el.play();
-      localMusicStarted = true;
-    } catch (err) {
-      console.warn('Local music did not start; keeping procedural fallback.', err);
-    }
-  }
-
-  function hookParentControls() {
-    const soundToggle = document.getElementById('sound-toggle');
-    const musicToggle = document.getElementById('music-toggle');
-    const musicVolume = document.getElementById('music-volume');
-
-    if (soundToggle && soundToggle.dataset.premiumSfxHooked !== 'true') {
-      soundToggle.dataset.premiumSfxHooked = 'true';
-      soundToggle.addEventListener('click', () => {
-        const willEnable = !soundToggle.classList.contains('is-on');
-        setEnabled(willEnable);
-        if (willEnable) setTimeout(() => sfx.boot(), 0);
-      }, true);
-    }
-
-    if (musicToggle && musicToggle.dataset.localMusicHooked !== 'true') {
-      musicToggle.dataset.localMusicHooked = 'true';
-      musicToggle.addEventListener('click', () => {
-        musicEnabled = !musicToggle.classList.contains('is-on');
-        if (!musicEnabled && musicEl) {
-          musicEl.pause();
-          localMusicStarted = false;
-        }
-      }, true);
-    }
-
-    if (musicVolume && musicVolume.dataset.localMusicHooked !== 'true') {
-      musicVolume.dataset.localMusicHooked = 'true';
-      musicGain = Number(musicVolume.value || 0.38);
-      musicVolume.addEventListener('input', () => {
-        musicGain = Number(musicVolume.value || 0.38);
-        if (musicEl) musicEl.volume = musicGain;
-      });
-    }
-
-    preloadLocalMusic();
-  }
-
-  function hookFrame() {
+  function getGameDocument() {
     const frame = document.getElementById('game-frame');
-    if (!frame || pollTimer) return;
-
-    frame.addEventListener('load', () => {
-      const doc = frame.contentDocument || frame.contentWindow?.document;
-      const start = doc?.getElementById('start-button');
-      if (start && start.dataset.premiumSfxHooked !== 'true') {
-        start.dataset.premiumSfxHooked = 'true';
-        start.addEventListener('click', () => {
-          setEnabled(true);
-          setTimeout(() => sfx.start(), 0);
-          setTimeout(() => sfx.sweep(), 70);
-          playLocalMusicOnStart();
-        }, true);
-      }
-    });
-
-    pollTimer = window.setInterval(() => {
-      const doc = frame.contentDocument || frame.contentWindow?.document;
-      if (!doc) return;
-
-      const scoreEl = doc.getElementById('score');
-      const score = Number(scoreEl?.textContent || 0);
-      if (score > lastScore) sfx.collect();
-      lastScore = score;
-
-      const hand = doc.getElementById('hand-status');
-      const locked = Boolean(hand?.classList.contains('locked'));
-      const t = performance.now();
-      if (locked && !lastHandLocked && t - lastLockAt > 900) {
-        sfx.lock();
-        lastLockAt = t;
-      }
-      lastHandLocked = locked;
-
-      const over = doc.getElementById('game-over');
-      const isOver = Boolean(over && getComputedStyle(over).display !== 'none');
-      if (isOver && !lastGameOver) {
-        sfx.crash();
-        if (musicEl) {
-          musicEl.pause();
-          localMusicStarted = false;
-        }
-      }
-      lastGameOver = isOver;
-    }, 100);
+    if (!frame) return document;
+    try {
+      return frame.contentDocument || frame.contentWindow?.document || document;
+    } catch (_) {
+      return document;
+    }
   }
 
+  function hookAudioControls() {
+    const soundToggle = document.getElementById('sound-toggle');
+    if (!soundToggle || soundToggle.dataset.premiumSfxHooked === 'true') return;
+    soundToggle.dataset.premiumSfxHooked = 'true';
+    soundToggle.addEventListener('click', () => {
+      const willEnable = !soundToggle.classList.contains('is-on');
+      setEnabled(willEnable);
+      if (willEnable) sfx.boot();
+    }, true);
+  }
+
+  function hookStartButton(doc) {
+    const start = doc?.getElementById?.('start-button');
+    if (!start || start.dataset.premiumSfxHooked === 'true') return;
+    start.dataset.premiumSfxHooked = 'true';
+    start.addEventListener('click', () => {
+      setEnabled(true);
+      sfx.start();
+      setTimeout(() => sfx.sweep(), 70);
+    }, true);
+  }
+
+  function pollGameEvents() {
+    const doc = getGameDocument();
+    hookStartButton(doc);
+
+    const score = Number(doc.getElementById('score')?.textContent || 0);
+    if (score > lastScore) sfx.collect();
+    lastScore = score;
+
+    const hand = doc.getElementById('hand-status');
+    const locked = Boolean(hand?.classList.contains('locked'));
+    const t = performance.now();
+    if (locked && !lastHandLocked && t - lastLockAt > LOCK_COOLDOWN_MS) {
+      sfx.lock();
+      lastLockAt = t;
+    }
+    lastHandLocked = locked;
+
+    const over = doc.getElementById('game-over');
+    const isOver = Boolean(over && getComputedStyle(over).display !== 'none');
+    if (isOver && !lastGameOver) sfx.crash();
+    lastGameOver = isOver;
+  }
+
+  // ===== SECTION: INIT / CLEANUP =====
   function init() {
-    hookParentControls();
-    hookFrame();
+    hookAudioControls();
+    hookStartButton(getGameDocument());
+    const frame = document.getElementById('game-frame');
+    if (frame) frame.addEventListener('load', () => hookStartButton(getGameDocument()));
+    pollTimer = window.setInterval(pollGameEvents, SFX_POLL_MS);
+    window.addEventListener('pagehide', shutdown, { once: true });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
-  } else {
-    init();
+  function shutdown() {
+    if (pollTimer) window.clearInterval(pollTimer);
+    pollTimer = null;
   }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
 })();

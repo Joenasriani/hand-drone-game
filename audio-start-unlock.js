@@ -1,14 +1,14 @@
 // audio-start-unlock.js
 // ===== SECTION: PURPOSE =====
-// Reliable audio bootstrap for Hand Drone XS.
-// Starts audio only from a user gesture on the real Start Game button.
-// Supports both direct index.html use and play.html iframe use.
+// Reliable music-only bootstrap for Hand Drone XS.
+// Starts local music only from a user gesture on the real Start Game button.
+// SFX ownership lives only in audio-sfx.js.
 
 (function () {
   'use strict';
 
   // ===== SECTION: CONSTANTS =====
-  const TAG = '[Hand Drone Audio]';
+  const TAG = '[Hand Drone Music]';
   const SCAN_INTERVAL_MS = 500;
   const DEFAULT_MUSIC_VOLUME = 0.45;
   const MUSIC_URLS = [
@@ -19,7 +19,6 @@
   ];
 
   // ===== SECTION: GLOBAL STATE =====
-  let ctx = null;
   let music = null;
   let musicReady = false;
   let musicStarted = false;
@@ -37,16 +36,21 @@
     console.warn(TAG, ...args);
   }
 
-  function getAudioContext() {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume().catch((err) => warn('AudioContext resume failed', err));
-    return ctx;
-  }
-
   function getMusicVolume() {
     const slider = document.getElementById('music-volume');
     const value = Number(slider?.value ?? DEFAULT_MUSIC_VOLUME);
     return Number.isFinite(value) ? value : DEFAULT_MUSIC_VOLUME;
+  }
+
+  function getIframeDocument() {
+    const frame = document.getElementById('game-frame');
+    if (!frame) return null;
+    try {
+      return frame.contentDocument || frame.contentWindow?.document || null;
+    } catch (err) {
+      warn('Cannot access iframe for music hook:', err);
+      return null;
+    }
   }
 
   // ===== SECTION: MUSIC LOADING =====
@@ -103,66 +107,12 @@
     musicStarted = false;
   }
 
-  // ===== SECTION: SFX FALLBACK =====
-  function premiumClick() {
-    const c = getAudioContext();
-    const t = c.currentTime;
-    const gain = c.createGain();
-    const comp = c.createDynamicsCompressor();
-    const osc1 = c.createOscillator();
-    const osc2 = c.createOscillator();
-    const filter = c.createBiquadFilter();
-
-    comp.threshold.value = -18;
-    comp.ratio.value = 3;
-    filter.type = 'lowpass';
-    filter.frequency.value = 5200;
-
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
-
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(120, t);
-    osc1.frequency.exponentialRampToValueAtTime(210, t + 0.2);
-
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(620, t + 0.03);
-    osc2.frequency.exponentialRampToValueAtTime(1120, t + 0.22);
-
-    osc1.connect(filter);
-    osc2.connect(filter);
-    filter.connect(gain).connect(comp).connect(c.destination);
-
-    osc1.start(t);
-    osc2.start(t + 0.03);
-    osc1.stop(t + 0.3);
-    osc2.stop(t + 0.3);
-  }
-
-  async function startAudio() {
-    getAudioContext();
-    premiumClick();
-    await playMusicFromStartGesture();
-  }
-
   // ===== SECTION: EVENT HOOKING =====
   function hookButton(button, label) {
-    if (!button || button.dataset.audioStartUnlock === 'true') return;
-    button.dataset.audioStartUnlock = 'true';
-    button.addEventListener('click', startAudio, true);
-    log('Hooked Start Game audio unlock:', label);
-  }
-
-  function getIframeDocument() {
-    const frame = document.getElementById('game-frame');
-    if (!frame) return null;
-    try {
-      return frame.contentDocument || frame.contentWindow?.document || null;
-    } catch (err) {
-      warn('Cannot access iframe for audio hook:', err);
-      return null;
-    }
+    if (!button || button.dataset.musicStartUnlock === 'true') return;
+    button.dataset.musicStartUnlock = 'true';
+    button.addEventListener('click', playMusicFromStartGesture, true);
+    log('Hooked Start Game music unlock:', label);
   }
 
   function scan() {
@@ -174,16 +124,17 @@
     const musicToggle = document.getElementById('music-toggle');
     const musicVolume = document.getElementById('music-volume');
 
-    if (musicToggle && musicToggle.dataset.audioStartToggleHooked !== 'true') {
-      musicToggle.dataset.audioStartToggleHooked = 'true';
+    if (musicToggle && musicToggle.dataset.musicToggleHooked !== 'true') {
+      musicToggle.dataset.musicToggleHooked = 'true';
       musicToggle.addEventListener('click', () => {
-        musicEnabled = musicToggle.classList.contains('is-on') || musicToggle.textContent.toLowerCase().includes('on');
+        const textSaysOn = musicToggle.textContent.toLowerCase().includes('on');
+        musicEnabled = musicToggle.classList.contains('is-on') || textSaysOn;
         if (!musicEnabled) stopMusic();
       });
     }
 
-    if (musicVolume && musicVolume.dataset.audioStartVolumeHooked !== 'true') {
-      musicVolume.dataset.audioStartVolumeHooked = 'true';
+    if (musicVolume && musicVolume.dataset.musicVolumeHooked !== 'true') {
+      musicVolume.dataset.musicVolumeHooked = 'true';
       musicVolume.addEventListener('input', () => {
         if (music) music.volume = getMusicVolume();
       });

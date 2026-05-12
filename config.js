@@ -71,14 +71,6 @@
     const style = document.createElement('style');
     style.dataset.baseVisualGuards = 'hand-drone-xs';
     style.textContent = `
-      #title-splash,
-      .splash {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
-
       body.hand-drone-starting #loading {
         display: none !important;
       }
@@ -363,8 +355,16 @@
   const bootstrap = () => {
     injectBaseVisualGuards();
     loadStyleOnce('premium.css', 'premium-theme');
-    loadScriptOnce('audio-sfx.js', 'procedural-sfx');
-    if (IS_TOP_WINDOW) loadScriptOnce('audio-start-unlock.js', 'start-audio-unlock');
+
+    // Audio ownership rule:
+    // - top window owns music unlock and SFX polling for play.html wrapper mode
+    // - direct index.html is also a top window, so it still gets both audio modules
+    // - child iframe does not inject audio modules, preventing duplicate systems
+    if (IS_TOP_WINDOW) {
+      loadScriptOnce('audio-sfx.js', 'procedural-sfx');
+      loadScriptOnce('audio-start-unlock.js', 'start-audio-unlock');
+    }
+
     injectSingleStartScreen();
   };
 
