@@ -1,67 +1,78 @@
 // audio-sfx.js
-// Startup asset gate + premium procedural SFX for Hand Drone XS.
-// This file is loaded by index.html before the game module, so it can control splash timing safely.
+// Startup loading gate + procedural SFX for Hand Drone XS.
+// Keeps gameplay untouched. Music playback is triggered by index.html on START GAME.
 
 (function () {
   'use strict';
 
-  // ===== SECTION: STARTUP ASSET GATE =====
-  const STARTUP_MIN_READY_MS = 2000;
-  const STARTUP_MAX_WAIT_MS = 9000;
-  const MUSIC_URLS = [
+  const MIN_SPLASH_MS = 2000;
+  const MAX_WAIT_MS = 9000;
+  const MUSIC_PATHS = [
     './Battlefield%20Ascent.mp3',
     './Battlefield Ascent.mp3',
     'Battlefield%20Ascent.mp3',
     'Battlefield Ascent.mp3'
   ];
 
-  function injectStartupGateStyle() {
+  function injectGateStyle() {
     if (document.querySelector('style[data-hdx-startup-gate="true"]')) return;
+
     const style = document.createElement('style');
     style.dataset.hdxStartupGate = 'true';
     style.textContent = `
       body:not(.hdx-assets-ready) #start-screen{display:none!important;opacity:0!important;pointer-events:none!important}
-      body:not(.hdx-assets-ready) #logo-splash{display:grid!important;opacity:1!important;pointer-events:auto!important}
+      body:not(.hdx-assets-ready) #logo-splash{display:none!important}
       #hdx-startup-gate{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:clamp(44px,9vw,128px);box-sizing:border-box;background:radial-gradient(circle at 50% 42%,rgba(14,165,233,.22),transparent 38%),radial-gradient(circle at 50% 58%,rgba(255,49,95,.11),transparent 42%),#03050d;color:#e8faff;font-family:Segoe UI,Tahoma,sans-serif;overflow:hidden;transition:opacity 300ms ease}
       #hdx-startup-gate.is-fading{opacity:0}
-      .hdx-startup-inner{width:min(480px,calc(100vw - 64px));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
-      .hdx-startup-logo{width:min(300px,58vw,44vh);aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16))}
+      .hdx-startup-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:clamp(90px,14vh,150px);box-sizing:border-box;text-align:center}
+      .hdx-startup-logo{width:min(300px,58vw,44vh);aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16));animation:hdxLogoEnter 520ms cubic-bezier(.2,.85,.22,1) forwards;opacity:0;transform:scale(.9)}
       .hdx-startup-logo img{width:100%;height:100%;object-fit:contain;display:block}
-      .hdx-startup-track{width:min(360px,80vw);height:10px;border-radius:999px;overflow:hidden;background:rgba(110,231,255,.12);border:1px solid rgba(110,231,255,.28);box-shadow:0 0 18px rgba(110,231,255,.08)}
-      .hdx-startup-fill{width:8%;height:100%;border-radius:inherit;background:linear-gradient(90deg,rgba(110,231,255,.42),rgba(255,209,102,.9),rgba(110,231,255,.78));transition:width 220ms ease}
-      .hdx-startup-meta{width:min(360px,80vw);display:flex;justify-content:space-between;gap:12px;font:800 11px Courier New,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,250,255,.76)}
-      .hdx-startup-status{font:700 12px Courier New,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,209,102,.9);min-height:16px}
-      @media(max-height:560px){.hdx-startup-inner{gap:10px}.hdx-startup-logo{width:min(220px,45vw,40vh)}.hdx-startup-track,.hdx-startup-meta{width:min(320px,78vw)}}
+      .hdx-startup-bottom{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100vw - 36px));z-index:10002;padding:14px 16px 13px;border-radius:18px;box-sizing:border-box;background:linear-gradient(180deg,rgba(7,16,32,.76),rgba(2,5,13,.92)),radial-gradient(circle at 18% 20%,rgba(110,231,255,.16),transparent 42%),radial-gradient(circle at 82% 60%,rgba(255,49,95,.12),transparent 46%);border:1px solid rgba(110,231,255,.24);box-shadow:0 0 22px rgba(110,231,255,.10),0 16px 46px rgba(0,0,0,.42),inset 0 0 18px rgba(110,231,255,.045);backdrop-filter:blur(10px)}
+      .hdx-startup-track{width:100%;height:11px;border-radius:999px;overflow:hidden;background:rgba(110,231,255,.10);border:1px solid rgba(110,231,255,.30);box-shadow:inset 0 0 12px rgba(0,0,0,.34),0 0 20px rgba(110,231,255,.08)}
+      .hdx-startup-fill{width:8%;height:100%;min-width:8%;border-radius:inherit;background:linear-gradient(90deg,rgba(110,231,255,.42),rgba(255,209,102,.9),rgba(110,231,255,.78));box-shadow:0 0 18px rgba(255,209,102,.38);transition:width 220ms ease}
+      .hdx-startup-meta{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font:800 11px Courier New,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,250,255,.78)}
+      .hdx-startup-eta{margin-top:7px;font:800 10px Courier New,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(110,231,255,.82);text-align:center}
+      .hdx-startup-eta strong{color:rgba(255,209,102,.98);font-weight:900}
+      @keyframes hdxLogoEnter{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
+      @media(max-width:640px){.hdx-startup-bottom{bottom:max(16px,env(safe-area-inset-bottom));width:min(420px,calc(100vw - 26px));padding:12px 13px 11px;border-radius:16px}.hdx-startup-inner{padding-bottom:clamp(104px,18vh,148px)}.hdx-startup-logo{width:min(230px,62vw,42vh)}}
+      @media(max-height:560px){.hdx-startup-bottom{bottom:max(10px,env(safe-area-inset-bottom));padding:10px 12px 9px}.hdx-startup-inner{padding-bottom:88px}.hdx-startup-logo{width:min(220px,45vw,40vh)}.hdx-startup-eta{margin-top:5px}}
     `;
     document.head.appendChild(style);
   }
 
-  function setStartupProgress(percent, status) {
+  function setProgress(percent) {
+    const safe = Math.max(0, Math.min(100, Math.round(percent)));
     const fill = document.querySelector('.hdx-startup-fill');
     const pct = document.querySelector('.hdx-startup-percent');
-    const text = document.querySelector('.hdx-startup-status');
-    const safe = Math.max(0, Math.min(100, Math.round(percent)));
     if (fill) fill.style.width = safe + '%';
     if (pct) pct.textContent = safe + '%';
-    if (text && status) text.textContent = status;
+  }
+
+  function setEta(startTime, percent) {
+    const eta = document.querySelector('.hdx-startup-eta');
+    if (!eta) return;
+
+    const elapsed = performance.now() - startTime;
+    const ratio = Math.max(0.08, Math.min(1, percent / 100));
+    const estimatedTotal = Math.max(MIN_SPLASH_MS, Math.min(MAX_WAIT_MS, elapsed / ratio));
+    const seconds = percent >= 98 ? 0 : Math.max(0, Math.ceil((estimatedTotal - elapsed) / 1000));
+
+    eta.innerHTML = seconds <= 0 ? 'ETA: <strong>Ready</strong>' : `ETA: <strong>${seconds}s</strong> - loading assets`;
   }
 
   function waitForImage(src) {
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve({ ok: true, src });
-      img.onerror = () => resolve({ ok: false, src });
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
       img.decoding = 'async';
-      img.src = src + (src.includes('?') ? '&' : '?') + 'v=' + Date.now();
+      img.src = src;
     });
   }
 
-  function waitForMusicBuffer(audio) {
+  function waitForMusic(audio) {
     return new Promise((resolve) => {
-      if (!audio) {
-        resolve({ ok: false, reason: 'missing-audio-element' });
-        return;
-      }
+      if (!audio) return resolve(false);
 
       let done = false;
       let index = 0;
@@ -77,14 +88,11 @@
         audio.removeEventListener('loadeddata', onReady);
         audio.removeEventListener('error', onError);
       };
-      const onReady = () => finish({ ok: true, src: audio.currentSrc || audio.src });
+      const onReady = () => finish(true);
       const onError = () => {
         index += 1;
-        if (index >= MUSIC_URLS.length) {
-          finish({ ok: false, reason: 'all-music-paths-failed' });
-          return;
-        }
-        audio.src = MUSIC_URLS[index];
+        if (index >= MUSIC_PATHS.length) return finish(false);
+        audio.src = MUSIC_PATHS[index];
         try { audio.load(); } catch (_) {}
       };
 
@@ -95,43 +103,42 @@
       audio.addEventListener('loadeddata', onReady);
       audio.addEventListener('error', onError);
 
-      if (!audio.getAttribute('src')) audio.src = MUSIC_URLS[0];
+      if (!audio.getAttribute('src')) audio.src = MUSIC_PATHS[0];
       try { audio.load(); } catch (_) {}
 
-      window.setTimeout(() => finish({ ok: false, reason: 'music-buffer-timeout' }), STARTUP_MAX_WAIT_MS);
+      window.setTimeout(() => finish(false), MAX_WAIT_MS);
     });
   }
 
   async function startupGate() {
-    injectStartupGateStyle();
+    injectGateStyle();
 
-    const originalSplash = document.getElementById('logo-splash');
-    if (originalSplash) originalSplash.style.display = 'none';
+    const oldSplash = document.getElementById('logo-splash');
+    if (oldSplash) oldSplash.style.display = 'none';
 
-    let gate = document.getElementById('hdx-startup-gate');
-    if (!gate) {
-      gate = document.createElement('div');
-      gate.id = 'hdx-startup-gate';
-      gate.innerHTML = '<div class="hdx-startup-inner"><div class="hdx-startup-logo"><img src="./logo.png" alt="Hand Drone XS" decoding="async"></div><div class="hdx-startup-track"><div class="hdx-startup-fill"></div></div><div class="hdx-startup-meta"><span>Preparing game</span><span class="hdx-startup-percent">8%</span></div><div class="hdx-startup-status">Loading logo...</div></div>';
-      document.body.appendChild(gate);
-    }
+    const gate = document.createElement('div');
+    gate.id = 'hdx-startup-gate';
+    gate.innerHTML = '<div class="hdx-startup-inner"><div class="hdx-startup-logo"><img src="./logo.png" alt="Hand Drone XS" decoding="async"></div></div><div class="hdx-startup-bottom"><div class="hdx-startup-track"><div class="hdx-startup-fill"></div></div><div class="hdx-startup-meta"><span>Preparing game</span><span class="hdx-startup-percent">8%</span></div><div class="hdx-startup-eta">ETA: <strong>calculating</strong></div></div>';
+    document.body.appendChild(gate);
 
-    const startTime = performance.now();
-    setStartupProgress(12, 'Loading logo...');
+    const start = performance.now();
+    const tick = window.setInterval(() => setEta(start, Number((document.querySelector('.hdx-startup-percent')?.textContent || '8').replace(/[^0-9.]/g, ''))), 150);
+
+    setProgress(16);
     await waitForImage('./logo.png');
 
-    setStartupProgress(42, 'Buffering music...');
-    const music = document.getElementById('game-music');
-    await waitForMusicBuffer(music);
+    setProgress(48);
+    await waitForMusic(document.getElementById('game-music'));
 
-    setStartupProgress(78, 'Preparing SFX...');
+    setProgress(82);
     window.__HDX_SFX_READY__ = true;
 
-    setStartupProgress(92, 'Preparing start menu...');
-    const elapsed = performance.now() - startTime;
-    await new Promise((resolve) => window.setTimeout(resolve, Math.max(0, STARTUP_MIN_READY_MS - elapsed)));
+    const elapsed = performance.now() - start;
+    await new Promise((resolve) => window.setTimeout(resolve, Math.max(0, MIN_SPLASH_MS - elapsed)));
 
-    setStartupProgress(100, 'Ready');
+    setProgress(100);
+    setEta(start, 100);
+    window.clearInterval(tick);
     document.body.classList.add('hdx-assets-ready', 'hdx-start-ready');
 
     window.setTimeout(() => {
@@ -147,22 +154,16 @@
 (function () {
   'use strict';
 
-  // ===== SECTION: CONSTANTS =====
   const SFX_POLL_MS = 100;
   const LOCK_COOLDOWN_MS = 900;
-
-  // ===== SECTION: GLOBAL STATE =====
-  let ctx;
+  let ctx, masterBus, masterComp;
   let enabled = false;
   let lastScore = 0;
   let lastHandLocked = false;
   let lastLockAt = 0;
   let lastGameOver = false;
   let pollTimer = null;
-  let masterBus;
-  let masterComp;
 
-  // ===== SECTION: AUDIO GRAPH HELPERS =====
   function getCtx() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -180,205 +181,101 @@
     return ctx;
   }
 
-  function now() {
-    return getCtx().currentTime;
-  }
-
-  function envGain(c, start, attack, hold, release, peak) {
+  function env(c, t, attack, hold, release, peak) {
     const g = c.createGain();
     const min = 0.0001;
-    g.gain.setValueAtTime(min, start);
-    g.gain.exponentialRampToValueAtTime(Math.max(min, peak), start + attack);
-    g.gain.setValueAtTime(Math.max(min, peak), start + attack + hold);
-    g.gain.exponentialRampToValueAtTime(min, start + attack + hold + release);
+    g.gain.setValueAtTime(min, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(min, peak), t + attack);
+    g.gain.setValueAtTime(Math.max(min, peak), t + attack + hold);
+    g.gain.exponentialRampToValueAtTime(min, t + attack + hold + release);
     return g;
   }
 
-  function makeFilter(c, type, freq, q) {
-    const f = c.createBiquadFilter();
-    f.type = type;
-    f.frequency.value = freq;
-    f.Q.value = q;
-    return f;
-  }
-
-  function makePan(c, pan) {
-    if (!c.createStereoPanner) return null;
-    const p = c.createStereoPanner();
-    p.pan.value = pan;
-    return p;
-  }
-
-  function connectChain(source, nodes) {
-    let prev = source;
-    nodes.filter(Boolean).forEach((node) => {
-      prev.connect(node);
-      prev = node;
-    });
-    prev.connect(masterBus);
-  }
-
-  // ===== SECTION: SFX SYNTHESIS =====
-  function tone({ freq = 440, to = freq, dur = 0.14, type = 'sine', vol = 0.08, at = 0, pan = 0, filter = 4200, q = 0.8, attack = 0.006, release = 0.12 }) {
+  function tone(freq, to, dur, type, vol, delay) {
     if (!enabled) return;
     const c = getCtx();
-    const t = now() + at;
+    const t = c.currentTime + (delay || 0);
     const o = c.createOscillator();
-    const f = makeFilter(c, 'lowpass', filter, q);
-    const p = makePan(c, pan);
-    const g = envGain(c, t, attack, 0.002, release, vol);
-    o.type = type;
+    const f = c.createBiquadFilter();
+    const g = env(c, t, 0.006, 0.002, Math.max(0.08, dur), vol);
+    o.type = type || 'sine';
     o.frequency.setValueAtTime(freq, t);
-    o.frequency.exponentialRampToValueAtTime(Math.max(20, to), t + dur);
-    connectChain(o, [f, p, g]);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, to || freq), t + dur);
+    f.type = 'lowpass';
+    f.frequency.value = 7600;
+    o.connect(f).connect(g).connect(masterBus);
     o.start(t);
-    o.stop(t + dur + release + 0.04);
+    o.stop(t + dur + 0.18);
   }
 
-  function metallicPing({ freq = 880, dur = 0.16, vol = 0.06, at = 0, pan = 0 }) {
-    tone({ freq, to: freq * 1.02, dur, type: 'sine', vol, at, pan, filter: 7200, q: 1.2, release: dur });
-    tone({ freq: freq * 1.505, to: freq * 1.48, dur: dur * 0.86, type: 'triangle', vol: vol * 0.42, at: at + 0.006, pan: -pan * 0.6, filter: 6400, q: 0.9, release: dur * 0.7 });
-    tone({ freq: freq * 2.01, to: freq * 1.86, dur: dur * 0.55, type: 'sine', vol: vol * 0.22, at: at + 0.012, pan: pan * 0.8, filter: 8400, q: 0.7, release: dur * 0.5 });
-  }
-
-  function noiseBurst({ dur = 0.18, vol = 0.045, at = 0, pan = 0, filter = 2400, type = 'bandpass', q = 0.9, attack = 0.004, release = 0.14 }) {
+  function noise(dur, vol, delay) {
     if (!enabled) return;
     const c = getCtx();
-    const t = now() + at;
+    const t = c.currentTime + (delay || 0);
     const len = Math.max(1, Math.floor(c.sampleRate * dur));
     const buffer = c.createBuffer(1, len, c.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < len; i++) {
-      const p = i / len;
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - p, 2.2);
-    }
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
     const src = c.createBufferSource();
-    const f = makeFilter(c, type, filter, q);
-    const p = makePan(c, pan);
-    const g = envGain(c, t, attack, 0.001, release, vol);
+    const f = c.createBiquadFilter();
+    const g = env(c, t, 0.004, 0.001, 0.16, vol);
+    f.type = 'bandpass';
+    f.frequency.value = 3600;
+    f.Q.value = 0.9;
     src.buffer = buffer;
-    connectChain(src, [f, p, g]);
+    src.connect(f).connect(g).connect(masterBus);
     src.start(t);
-    src.stop(t + dur + release + 0.04);
+    src.stop(t + dur + 0.2);
   }
 
-  function subDrop({ from = 120, to = 42, dur = 0.42, vol = 0.09, at = 0 }) {
-    tone({ freq: from, to, dur, type: 'sine', vol, at, pan: 0, filter: 360, q: 0.7, attack: 0.012, release: dur * 0.8 });
-  }
-
-  // ===== SECTION: SFX CUES =====
   const sfx = {
-    boot() {
-      subDrop({ from: 74, to: 118, dur: 0.42, vol: 0.11 });
-      noiseBurst({ dur: 0.42, vol: 0.015, filter: 3600, type: 'bandpass', pan: -0.18, release: 0.26 });
-      metallicPing({ freq: 520, dur: 0.22, vol: 0.038, at: 0.08, pan: -0.18 });
-      metallicPing({ freq: 760, dur: 0.24, vol: 0.032, at: 0.2, pan: 0.16 });
-      tone({ freq: 1480, to: 1180, dur: 0.13, type: 'sine', vol: 0.014, at: 0.36, pan: 0.22, filter: 9000, release: 0.12 });
-    },
-    start() {
-      subDrop({ from: 92, to: 142, dur: 0.28, vol: 0.078 });
-      noiseBurst({ dur: 0.16, vol: 0.025, filter: 5200, type: 'bandpass', pan: -0.12, release: 0.12 });
-      metallicPing({ freq: 620, dur: 0.18, vol: 0.044, at: 0.035, pan: -0.1 });
-      metallicPing({ freq: 1040, dur: 0.16, vol: 0.03, at: 0.11, pan: 0.14 });
-      tone({ freq: 2100, to: 1560, dur: 0.12, type: 'sine', vol: 0.012, at: 0.18, pan: 0.2, filter: 9200, release: 0.08 });
-    },
-    sweep() {
-      noiseBurst({ dur: 0.28, vol: 0.016, filter: 6200, type: 'bandpass', pan: 0.18, release: 0.2 });
-      tone({ freq: 1400, to: 360, dur: 0.24, type: 'sine', vol: 0.02, at: 0.02, pan: -0.12, filter: 7600, release: 0.14 });
-    },
-    lock() {
-      metallicPing({ freq: 840, dur: 0.13, vol: 0.038, pan: -0.08 });
-      tone({ freq: 1560, to: 1320, dur: 0.1, type: 'sine', vol: 0.018, at: 0.045, pan: 0.12, filter: 7600, release: 0.09 });
-      noiseBurst({ dur: 0.08, vol: 0.006, filter: 5000, type: 'highpass', at: 0.03, release: 0.08 });
-    },
-    collect() {
-      metallicPing({ freq: 760, dur: 0.15, vol: 0.044, pan: -0.14 });
-      metallicPing({ freq: 1160, dur: 0.16, vol: 0.034, at: 0.042, pan: 0.18 });
-      tone({ freq: 1880, to: 2360, dur: 0.12, type: 'sine', vol: 0.012, at: 0.075, pan: 0.08, filter: 9600, release: 0.1 });
-      noiseBurst({ dur: 0.1, vol: 0.009, filter: 7600, type: 'highpass', at: 0.016, pan: 0.12, release: 0.08 });
-    },
-    crash() {
-      noiseBurst({ dur: 0.36, vol: 0.075, filter: 1500, type: 'lowpass', pan: -0.08, release: 0.32 });
-      subDrop({ from: 156, to: 38, dur: 0.58, vol: 0.085, at: 0.02 });
-      tone({ freq: 340, to: 98, dur: 0.42, type: 'sawtooth', vol: 0.035, at: 0.03, pan: 0.08, filter: 680, release: 0.35 });
-      noiseBurst({ dur: 0.62, vol: 0.018, filter: 420, type: 'lowpass', at: 0.16, pan: 0.04, release: 0.5 });
-    }
+    start() { tone(92, 142, 0.28, 'sine', 0.078, 0); noise(0.16, 0.025, 0.02); tone(620, 640, 0.18, 'sine', 0.044, 0.035); tone(1040, 920, 0.16, 'triangle', 0.03, 0.11); },
+    collect() { tone(760, 820, 0.15, 'sine', 0.044, 0); tone(1160, 1280, 0.16, 'triangle', 0.034, 0.042); noise(0.1, 0.009, 0.016); },
+    lock() { tone(840, 920, 0.13, 'sine', 0.038, 0); tone(1560, 1320, 0.1, 'sine', 0.018, 0.045); },
+    crash() { noise(0.36, 0.075, 0); tone(156, 38, 0.58, 'sine', 0.085, 0.02); tone(340, 98, 0.42, 'sawtooth', 0.035, 0.03); }
   };
 
-  // ===== SECTION: GAME DOM HELPERS =====
   function setEnabled(next) {
     enabled = Boolean(next);
     if (enabled) getCtx();
   }
 
-  function getGameDocument() {
-    const frame = document.getElementById('game-frame');
-    if (!frame) return document;
-    try {
-      return frame.contentDocument || frame.contentWindow?.document || document;
-    } catch (_) {
-      return document;
-    }
-  }
-
-  function hookAudioControls() {
-    const soundToggle = document.getElementById('sound-toggle');
-    if (!soundToggle || soundToggle.dataset.premiumSfxHooked === 'true') return;
-    soundToggle.dataset.premiumSfxHooked = 'true';
-    soundToggle.addEventListener('click', () => {
-      const willEnable = !soundToggle.classList.contains('is-on');
-      setEnabled(willEnable);
-      if (willEnable) sfx.boot();
-    }, true);
-  }
-
-  function hookStartButton(doc) {
-    const start = doc?.getElementById?.('start-button');
+  function hookStartButton() {
+    const start = document.getElementById('start-button');
     if (!start || start.dataset.premiumSfxHooked === 'true') return;
     start.dataset.premiumSfxHooked = 'true';
-    start.addEventListener('click', () => {
-      setEnabled(true);
-      sfx.start();
-      setTimeout(() => sfx.sweep(), 70);
-    }, true);
+    start.addEventListener('click', () => { setEnabled(true); sfx.start(); }, true);
   }
 
-  function pollGameEvents() {
-    const doc = getGameDocument();
-    hookStartButton(doc);
+  function poll() {
+    hookStartButton();
 
-    const score = Number(doc.getElementById('score')?.textContent || 0);
+    const score = Number(document.getElementById('score')?.textContent || 0);
     if (score > lastScore) sfx.collect();
     lastScore = score;
 
-    const hand = doc.getElementById('hand-status');
+    const hand = document.getElementById('hand-status');
     const locked = Boolean(hand?.classList.contains('locked'));
-    const t = performance.now();
-    if (locked && !lastHandLocked && t - lastLockAt > LOCK_COOLDOWN_MS) {
+    const now = performance.now();
+    if (locked && !lastHandLocked && now - lastLockAt > LOCK_COOLDOWN_MS) {
       sfx.lock();
-      lastLockAt = t;
+      lastLockAt = now;
     }
     lastHandLocked = locked;
 
-    const over = doc.getElementById('game-over');
+    const over = document.getElementById('game-over');
     const isOver = Boolean(over && getComputedStyle(over).display !== 'none');
     if (isOver && !lastGameOver) sfx.crash();
     lastGameOver = isOver;
   }
 
-  // ===== SECTION: INIT / CLEANUP =====
   function init() {
-    hookAudioControls();
-    hookStartButton(getGameDocument());
-    const frame = document.getElementById('game-frame');
-    if (frame) frame.addEventListener('load', () => hookStartButton(getGameDocument()));
-    pollTimer = window.setInterval(pollGameEvents, SFX_POLL_MS);
-    window.addEventListener('pagehide', shutdown, { once: true });
-  }
-
-  function shutdown() {
-    if (pollTimer) window.clearInterval(pollTimer);
-    pollTimer = null;
+    hookStartButton();
+    pollTimer = window.setInterval(poll, SFX_POLL_MS);
+    window.addEventListener('pagehide', () => {
+      if (pollTimer) window.clearInterval(pollTimer);
+      pollTimer = null;
+    }, { once: true });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
