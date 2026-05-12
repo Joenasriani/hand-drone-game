@@ -78,6 +78,15 @@
     document.head.appendChild(script);
   };
 
+  const injectStartAudioUnlock = () => {
+    if (document.querySelector('script[data-start-audio-unlock="hand-drone-xs"]')) return;
+    const script = document.createElement('script');
+    script.src = 'audio-start-unlock.js';
+    script.defer = true;
+    script.dataset.startAudioUnlock = 'hand-drone-xs';
+    document.head.appendChild(script);
+  };
+
   // Startup guidance + real visible loading progress.
   // UX-only layer. Does not change gameplay, tracking math, camera access, movement,
   // collision, renderer, or controls.
@@ -362,11 +371,13 @@
     document.addEventListener('DOMContentLoaded', () => {
       injectPremiumTheme();
       injectProceduralSfx();
+      injectStartAudioUnlock();
       injectStartupGuidanceAndLoading();
     }, { once: true });
   } else {
     injectPremiumTheme();
     injectProceduralSfx();
+    injectStartAudioUnlock();
     injectStartupGuidanceAndLoading();
   }
 })();
