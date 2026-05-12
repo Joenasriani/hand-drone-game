@@ -1,6 +1,148 @@
 // audio-sfx.js
-// Premium procedural SFX only for Hand Drone XS.
-// Music ownership lives only in audio-start-unlock.js.
+// Startup asset gate + premium procedural SFX for Hand Drone XS.
+// This file is loaded by index.html before the game module, so it can control splash timing safely.
+
+(function () {
+  'use strict';
+
+  // ===== SECTION: STARTUP ASSET GATE =====
+  const STARTUP_MIN_READY_MS = 2000;
+  const STARTUP_MAX_WAIT_MS = 9000;
+  const MUSIC_URLS = [
+    './Battlefield%20Ascent.mp3',
+    './Battlefield Ascent.mp3',
+    'Battlefield%20Ascent.mp3',
+    'Battlefield Ascent.mp3'
+  ];
+
+  function injectStartupGateStyle() {
+    if (document.querySelector('style[data-hdx-startup-gate="true"]')) return;
+    const style = document.createElement('style');
+    style.dataset.hdxStartupGate = 'true';
+    style.textContent = `
+      body:not(.hdx-assets-ready) #start-screen{display:none!important;opacity:0!important;pointer-events:none!important}
+      body:not(.hdx-assets-ready) #logo-splash{display:grid!important;opacity:1!important;pointer-events:auto!important}
+      #hdx-startup-gate{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:clamp(44px,9vw,128px);box-sizing:border-box;background:radial-gradient(circle at 50% 42%,rgba(14,165,233,.22),transparent 38%),radial-gradient(circle at 50% 58%,rgba(255,49,95,.11),transparent 42%),#03050d;color:#e8faff;font-family:Segoe UI,Tahoma,sans-serif;overflow:hidden;transition:opacity 300ms ease}
+      #hdx-startup-gate.is-fading{opacity:0}
+      .hdx-startup-inner{width:min(480px,calc(100vw - 64px));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+      .hdx-startup-logo{width:min(300px,58vw,44vh);aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16))}
+      .hdx-startup-logo img{width:100%;height:100%;object-fit:contain;display:block}
+      .hdx-startup-track{width:min(360px,80vw);height:10px;border-radius:999px;overflow:hidden;background:rgba(110,231,255,.12);border:1px solid rgba(110,231,255,.28);box-shadow:0 0 18px rgba(110,231,255,.08)}
+      .hdx-startup-fill{width:8%;height:100%;border-radius:inherit;background:linear-gradient(90deg,rgba(110,231,255,.42),rgba(255,209,102,.9),rgba(110,231,255,.78));transition:width 220ms ease}
+      .hdx-startup-meta{width:min(360px,80vw);display:flex;justify-content:space-between;gap:12px;font:800 11px Courier New,monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,250,255,.76)}
+      .hdx-startup-status{font:700 12px Courier New,monospace;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,209,102,.9);min-height:16px}
+      @media(max-height:560px){.hdx-startup-inner{gap:10px}.hdx-startup-logo{width:min(220px,45vw,40vh)}.hdx-startup-track,.hdx-startup-meta{width:min(320px,78vw)}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function setStartupProgress(percent, status) {
+    const fill = document.querySelector('.hdx-startup-fill');
+    const pct = document.querySelector('.hdx-startup-percent');
+    const text = document.querySelector('.hdx-startup-status');
+    const safe = Math.max(0, Math.min(100, Math.round(percent)));
+    if (fill) fill.style.width = safe + '%';
+    if (pct) pct.textContent = safe + '%';
+    if (text && status) text.textContent = status;
+  }
+
+  function waitForImage(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ ok: true, src });
+      img.onerror = () => resolve({ ok: false, src });
+      img.decoding = 'async';
+      img.src = src + (src.includes('?') ? '&' : '?') + 'v=' + Date.now();
+    });
+  }
+
+  function waitForMusicBuffer(audio) {
+    return new Promise((resolve) => {
+      if (!audio) {
+        resolve({ ok: false, reason: 'missing-audio-element' });
+        return;
+      }
+
+      let done = false;
+      let index = 0;
+      const finish = (result) => {
+        if (done) return;
+        done = true;
+        cleanup();
+        resolve(result);
+      };
+      const cleanup = () => {
+        audio.removeEventListener('canplaythrough', onReady);
+        audio.removeEventListener('canplay', onReady);
+        audio.removeEventListener('loadeddata', onReady);
+        audio.removeEventListener('error', onError);
+      };
+      const onReady = () => finish({ ok: true, src: audio.currentSrc || audio.src });
+      const onError = () => {
+        index += 1;
+        if (index >= MUSIC_URLS.length) {
+          finish({ ok: false, reason: 'all-music-paths-failed' });
+          return;
+        }
+        audio.src = MUSIC_URLS[index];
+        try { audio.load(); } catch (_) {}
+      };
+
+      audio.preload = 'auto';
+      audio.loop = true;
+      audio.addEventListener('canplaythrough', onReady);
+      audio.addEventListener('canplay', onReady);
+      audio.addEventListener('loadeddata', onReady);
+      audio.addEventListener('error', onError);
+
+      if (!audio.getAttribute('src')) audio.src = MUSIC_URLS[0];
+      try { audio.load(); } catch (_) {}
+
+      window.setTimeout(() => finish({ ok: false, reason: 'music-buffer-timeout' }), STARTUP_MAX_WAIT_MS);
+    });
+  }
+
+  async function startupGate() {
+    injectStartupGateStyle();
+
+    const originalSplash = document.getElementById('logo-splash');
+    if (originalSplash) originalSplash.style.display = 'none';
+
+    let gate = document.getElementById('hdx-startup-gate');
+    if (!gate) {
+      gate = document.createElement('div');
+      gate.id = 'hdx-startup-gate';
+      gate.innerHTML = '<div class="hdx-startup-inner"><div class="hdx-startup-logo"><img src="./logo.png" alt="Hand Drone XS" decoding="async"></div><div class="hdx-startup-track"><div class="hdx-startup-fill"></div></div><div class="hdx-startup-meta"><span>Preparing game</span><span class="hdx-startup-percent">8%</span></div><div class="hdx-startup-status">Loading logo...</div></div>';
+      document.body.appendChild(gate);
+    }
+
+    const startTime = performance.now();
+    setStartupProgress(12, 'Loading logo...');
+    await waitForImage('./logo.png');
+
+    setStartupProgress(42, 'Buffering music...');
+    const music = document.getElementById('game-music');
+    await waitForMusicBuffer(music);
+
+    setStartupProgress(78, 'Preparing SFX...');
+    window.__HDX_SFX_READY__ = true;
+
+    setStartupProgress(92, 'Preparing start menu...');
+    const elapsed = performance.now() - startTime;
+    await new Promise((resolve) => window.setTimeout(resolve, Math.max(0, STARTUP_MIN_READY_MS - elapsed)));
+
+    setStartupProgress(100, 'Ready');
+    document.body.classList.add('hdx-assets-ready', 'hdx-start-ready');
+
+    window.setTimeout(() => {
+      gate.classList.add('is-fading');
+      window.setTimeout(() => gate.remove(), 320);
+    }, 140);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startupGate, { once: true });
+  else startupGate();
+})();
 
 (function () {
   'use strict';
