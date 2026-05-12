@@ -37,6 +37,26 @@
 
   window.GAME_CONFIG = Object.assign({}, defaults, window.GAME_CONFIG || {});
 
+  // Remove the full-screen title splash page immediately.
+  // The game should open straight to the start guidance/camera control screen.
+  const injectRemoveTitleSplash = () => {
+    if (document.querySelector('style[data-remove-title-splash="hand-drone-xs"]')) return;
+    const style = document.createElement('style');
+    style.dataset.removeTitleSplash = 'hand-drone-xs';
+    style.textContent = `
+      #title-splash,
+      .splash {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  injectRemoveTitleSplash();
+
   // Premium cockpit visual identity pass.
   // Loaded through config.js so both index.html and play.html receive the same theme
   // without touching gameplay, MediaPipe, movement, collision, or renderer logic.
