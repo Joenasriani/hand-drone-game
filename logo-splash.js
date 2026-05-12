@@ -21,15 +21,16 @@
       body.hdx-start-ready:not(.hdx-logo-splash-active) #start-screen.hdx-logo-start{display:flex!important;opacity:1!important;pointer-events:auto!important}
       body.hdx-logo-splash-active #start-screen{display:none!important;opacity:0!important;pointer-events:none!important}
       #start-screen h2,#start-screen p,#start-screen .warning,.startup-guidance-card,.startup-guidance-title,.startup-guidance-grid,.startup-guidance-note{display:none!important}
-      #hdx-logo-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:clamp(56px,11vw,150px);box-sizing:border-box;background:radial-gradient(circle at 50% 42%,rgba(14,165,233,.2),transparent 38%),radial-gradient(circle at 50% 58%,rgba(255,49,95,.1),transparent 42%),#03050d;opacity:1;transition:opacity ${FADE_MS}ms ease}
+      #hdx-logo-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:clamp(44px,9vw,128px);box-sizing:border-box;background:radial-gradient(circle at 50% 42%,rgba(14,165,233,.2),transparent 38%),radial-gradient(circle at 50% 58%,rgba(255,49,95,.1),transparent 42%),#03050d;opacity:1;transition:opacity ${FADE_MS}ms ease;overflow:hidden}
       #hdx-logo-splash.is-fading{opacity:0}
-      .hdx-logo-splash-card{width:min(54vw,540px);max-width:calc(100vw - clamp(112px,22vw,300px));aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16));animation:hdxLogoEnter 800ms cubic-bezier(.2,.85,.22,1) forwards;opacity:0;transform:scale(.9)}
+      .hdx-logo-splash-card{width:min(48vw,460px);max-width:calc(100vw - 88px);max-height:calc(100vh - 88px);aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16));animation:hdxLogoEnter 800ms cubic-bezier(.2,.85,.22,1) forwards;opacity:0;transform:scale(.9)}
       .hdx-logo-splash-card img,.hdx-intro-logo img{width:100%;height:100%;object-fit:contain;display:block}
-      #start-screen.hdx-logo-start{width:min(520px,calc(100vw - 32px))!important;min-height:auto!important;padding:clamp(22px,4vw,36px)!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:12px!important}
-      .hdx-intro-logo{width:min(360px,74vw);aspect-ratio:1/1;margin:0 auto 4px;display:grid;place-items:center;filter:drop-shadow(0 0 20px rgba(110,231,255,.3))}
-      #start-screen.hdx-logo-start #start-button{margin-top:0!important}
+      #start-screen.hdx-logo-start{width:min(500px,calc(100vw - 32px))!important;height:auto!important;min-height:0!important;max-height:calc(100vh - 32px)!important;padding:clamp(14px,2.4vw,24px)!important;box-sizing:border-box!important;overflow:hidden!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:clamp(8px,1.4vh,14px)!important}
+      .hdx-intro-logo{width:min(300px,58vw,52vh);max-width:100%;aspect-ratio:1/1;margin:0 auto;display:grid;place-items:center;filter:drop-shadow(0 0 20px rgba(110,231,255,.3));flex:0 1 auto;min-height:0}
+      #start-screen.hdx-logo-start #start-button{margin-top:0!important;flex:0 0 auto;white-space:nowrap;max-width:100%;font-size:clamp(14px,2.1vw,18px)!important;padding:clamp(11px,1.7vh,15px) clamp(22px,4vw,30px)!important}
       @keyframes hdxLogoEnter{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
-      @media(max-width:640px){#hdx-logo-splash{padding:clamp(64px,19vw,116px)}.hdx-logo-splash-card{width:min(76vw,360px);max-width:calc(100vw - 120px)}.hdx-intro-logo{width:min(260px,68vw)}}
+      @media(max-width:640px){#hdx-logo-splash{padding:clamp(42px,14vw,90px)}.hdx-logo-splash-card{width:min(68vw,300px);max-width:calc(100vw - 84px);max-height:calc(100vh - 84px)}#start-screen.hdx-logo-start{width:min(390px,calc(100vw - 24px))!important;max-height:calc(100vh - 24px)!important;padding:16px!important;gap:10px!important}.hdx-intro-logo{width:min(230px,62vw,46vh)}#start-screen.hdx-logo-start #start-button{font-size:14px!important;padding:11px 22px!important}}
+      @media(max-height:560px){#start-screen.hdx-logo-start{padding:10px 14px!important;gap:8px!important}.hdx-intro-logo{width:min(220px,45vw,42vh)}#start-screen.hdx-logo-start #start-button{padding:9px 20px!important;font-size:13px!important}}
     `;
     document.head.appendChild(style);
   }
