@@ -1,18 +1,18 @@
 // logo-splash.js
-// Shows the uploaded game logo before the normal Start Game intro menu.
-// Also keeps the logo visible on the intro menu and patches game-over copy.
+// Replaces the old camera-control intro with a logo-only start flow.
+// Uses root /logo.png and keeps gameplay/camera/audio logic unchanged.
 
 (function () {
   'use strict';
 
-  const LOGO_FILE = '1b5af8b6-75b6-4a87-a2ac-dbffcd68aabc.png';
+  const LOGO_FILE = 'logo.png';
   const LOGO_PATHS = [
-    `./public/${LOGO_FILE}`,
-    `public/${LOGO_FILE}`,
-    `/hand-drone-game/public/${LOGO_FILE}`
+    './logo.png',
+    'logo.png',
+    '/hand-drone-game/logo.png'
   ];
-  const SHOW_MS = 3400;
-  const FADE_MS = 650;
+  const SPLASH_SHOW_MS = 2000;
+  const FADE_MS = 420;
 
   if (window.__HAND_DRONE_LOGO_SPLASH__) return;
   window.__HAND_DRONE_LOGO_SPLASH__ = true;
@@ -33,7 +33,7 @@
         z-index: 9999;
         display: grid;
         place-items: center;
-        padding: clamp(52px, 10vw, 140px);
+        padding: clamp(56px, 11vw, 150px);
         box-sizing: border-box;
         background:
           radial-gradient(circle at 50% 42%, rgba(14, 165, 233, 0.2), transparent 38%),
@@ -43,20 +43,18 @@
         transition: opacity ${FADE_MS}ms ease;
       }
 
-      #hdx-logo-splash.is-fading {
-        opacity: 0;
-      }
+      #hdx-logo-splash.is-fading { opacity: 0; }
 
       .hdx-logo-splash-card {
-        width: min(56vw, 540px);
-        max-width: calc(100vw - clamp(104px, 20vw, 280px));
+        width: min(54vw, 540px);
+        max-width: calc(100vw - clamp(112px, 22vw, 300px));
         aspect-ratio: 1 / 1;
         display: grid;
         place-items: center;
         filter: drop-shadow(0 0 30px rgba(110, 231, 255, 0.34)) drop-shadow(0 0 58px rgba(255, 49, 95, 0.16));
         transform: scale(0.9);
         opacity: 0;
-        animation: hdxLogoEnter 900ms cubic-bezier(.2,.85,.22,1) forwards;
+        animation: hdxLogoEnter 800ms cubic-bezier(.2,.85,.22,1) forwards;
       }
 
       .hdx-logo-splash-card img,
@@ -67,17 +65,38 @@
         display: block;
       }
 
-      .hdx-intro-logo {
-        width: min(300px, 72vw);
-        aspect-ratio: 1 / 1;
-        margin: -18px auto 8px;
-        display: grid;
-        place-items: center;
-        filter: drop-shadow(0 0 18px rgba(110, 231, 255, 0.3));
+      #start-screen.hdx-logo-start {
+        width: min(520px, calc(100vw - 32px)) !important;
+        min-height: auto !important;
+        padding: clamp(22px, 4vw, 36px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 12px !important;
       }
 
-      .hdx-intro-logo + h2 {
-        margin-top: -12px !important;
+      #start-screen.hdx-logo-start h2,
+      #start-screen.hdx-logo-start p,
+      #start-screen.hdx-logo-start .warning,
+      #start-screen.hdx-logo-start .startup-guidance-card,
+      #start-screen.hdx-logo-start .startup-guidance-title,
+      #start-screen.hdx-logo-start .startup-guidance-grid,
+      #start-screen.hdx-logo-start .startup-guidance-note {
+        display: none !important;
+      }
+
+      .hdx-intro-logo {
+        width: min(360px, 74vw);
+        aspect-ratio: 1 / 1;
+        margin: 0 auto 4px;
+        display: grid;
+        place-items: center;
+        filter: drop-shadow(0 0 20px rgba(110, 231, 255, 0.3));
+      }
+
+      #start-screen.hdx-logo-start #start-button {
+        margin-top: 0 !important;
       }
 
       @keyframes hdxLogoEnter {
@@ -86,27 +105,15 @@
       }
 
       @media (max-width: 640px) {
-        #hdx-logo-splash {
-          padding: clamp(60px, 18vw, 110px);
-        }
+        #hdx-logo-splash { padding: clamp(64px, 19vw, 116px); }
         .hdx-logo-splash-card {
           width: min(76vw, 360px);
-          max-width: calc(100vw - 110px);
+          max-width: calc(100vw - 120px);
         }
-        .hdx-intro-logo {
-          width: min(220px, 66vw);
-          margin-top: -12px;
-        }
+        .hdx-intro-logo { width: min(260px, 68vw); }
       }
     `;
     document.head.appendChild(style);
-  }
-
-  function patchGameOverCopy() {
-    const title = document.querySelector('#game-over h1');
-    const button = document.querySelector('#game-over button');
-    if (title) title.textContent = 'YOU KINDA HIT A TREE THERE!';
-    if (button) button.textContent = 'RESTART';
   }
 
   function resolveLogoSrc() {
@@ -127,23 +134,40 @@
     });
   }
 
-  function addIntroLogo(src) {
-    const start = document.getElementById('start-screen');
-    if (!start || start.querySelector('.hdx-intro-logo')) return;
-    const logo = document.createElement('div');
-    logo.className = 'hdx-intro-logo';
-    logo.innerHTML = `<img src="${src}" alt="Hand Drone XS" decoding="async" />`;
-    start.insertBefore(logo, start.firstChild);
+  function patchGameOverCopy() {
+    const title = document.querySelector('#game-over h1');
+    const button = document.querySelector('#game-over button');
+    if (title) title.textContent = 'YOU KINDA HIT A TREE THERE!';
+    if (button) button.textContent = 'RESTART';
   }
 
-  async function showSplash() {
+  function replaceOldStartMenu(src) {
+    const start = document.getElementById('start-screen');
+    if (!start) return;
+
+    start.classList.add('hdx-logo-start');
+    start.querySelectorAll('h2, p, .warning, .startup-guidance-card').forEach((node) => node.remove());
+
+    let logo = start.querySelector('.hdx-intro-logo');
+    if (!logo) {
+      logo = document.createElement('div');
+      logo.className = 'hdx-intro-logo';
+      logo.innerHTML = `<img src="${src}" alt="Hand Drone XS" decoding="async" />`;
+      start.insertBefore(logo, start.firstChild);
+    }
+
+    const button = start.querySelector('#start-button');
+    if (button) button.textContent = 'START GAME';
+  }
+
+  async function boot() {
     injectStyle();
     patchGameOverCopy();
 
-    if (document.getElementById('hdx-logo-splash')) return;
     const logoSrc = await resolveLogoSrc();
-    addIntroLogo(logoSrc);
+    replaceOldStartMenu(logoSrc);
 
+    if (document.getElementById('hdx-logo-splash')) return;
     document.body.classList.add('hdx-logo-splash-active');
 
     const splash = document.createElement('div');
@@ -160,13 +184,14 @@
       window.setTimeout(() => {
         splash.remove();
         document.body.classList.remove('hdx-logo-splash-active');
+        replaceOldStartMenu(logoSrc);
       }, FADE_MS + 80);
-    }, SHOW_MS);
+    }, SPLASH_SHOW_MS);
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', showSplash, { once: true });
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
   } else {
-    showSplash();
+    boot();
   }
 })();
