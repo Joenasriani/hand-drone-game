@@ -3,54 +3,1244 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>Hand Controlled Drone Run</title>
+<title>Hand Drone XS</title>
+
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1a1a2e;font-family:Segoe UI,Tahoma,sans-serif;user-select:none}canvas{display:block}#video-container{position:absolute;right:20px;bottom:20px;width:220px;height:165px;border:2px solid rgba(255,255,255,.5);border-radius:12px;overflow:hidden;z-index:10;transform:scaleX(-1);background:#000;box-shadow:0 0 15px rgba(0,255,255,.3)}#webcam{width:100%;height:100%;object-fit:cover;opacity:.8}#ui-layer{position:absolute;top:30px;left:30px;color:#fff;z-index:10;pointer-events:none;font-family:Courier New,monospace}#score-container{font-size:32px;font-weight:bold;text-shadow:0 0 10px #00d2ff;background:rgba(0,0,0,.3);padding:10px 20px;border-radius:8px;border:1px solid rgba(0,210,255,.3);display:inline-block}.hud-pill{font-size:12px;margin-top:8px;color:rgba(255,215,0,.88);text-transform:uppercase;letter-spacing:1px;background:rgba(0,0,0,.25);padding:5px 10px;border-radius:4px;display:inline-block;border:1px solid rgba(255,255,255,.08)}#hand-status{color:#ff6b81}#hand-status.locked{color:#00ffd5;text-shadow:0 0 8px rgba(0,255,213,.5)}.instructions{font-size:14px;margin-top:5px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:2px}.modal{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#00d2ff;background:rgba(16,16,32,.95);padding:42px;border-radius:16px;z-index:30;text-align:center;border:2px solid #00d2ff;box-shadow:0 0 40px rgba(0,210,255,.3);font-family:Courier New,monospace;width:min(460px,calc(100vw - 40px));box-sizing:border-box}#loading{display:none}#start-screen h2,#loading h2{margin:0 0 18px;font-size:30px;color:#00d2ff;text-shadow:0 0 10px #00d2ff}#start-screen p,#loading p{color:#fff;line-height:1.5;margin:10px 0}#start-screen .warning,#loading .warning{color:#ff6b81;font-weight:bold}#game-over{display:none;color:white;border-color:#ff4757;box-shadow:0 0 40px rgba(255,71,87,.4)}button{background:linear-gradient(45deg,#ff4757,#ff6b81);color:white;border:0;padding:15px 30px;font-size:18px;cursor:pointer;border-radius:30px;margin-top:20px;text-transform:uppercase;font-weight:bold;letter-spacing:1px}h1{margin:0 0 15px;color:#ff4757;text-transform:uppercase;letter-spacing:3px}.score-popup{position:absolute;z-index:12;pointer-events:none;color:#ffd700;font:900 22px Courier New,monospace;text-shadow:0 0 10px rgba(255,215,0,.85);transform:translate(-50%,-50%)}@media(max-width:640px){#video-container{width:140px;height:105px;right:12px;bottom:12px}#ui-layer{top:14px;left:14px}#score-container{font-size:20px;padding:8px 12px}.hud-pill{font-size:10px;padding:4px 7px}.modal{padding:28px 20px}}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#1a1a2e;
+  font-family:Segoe UI,Tahoma,sans-serif;
+  user-select:none;
+}
+
+canvas{
+  display:block;
+}
+
+#video-container{
+  position:absolute;
+  right:20px;
+  bottom:20px;
+  width:220px;
+  height:165px;
+  border:2px solid rgba(255,255,255,.5);
+  border-radius:12px;
+  overflow:hidden;
+  z-index:10;
+  transform:scaleX(-1);
+  background:#000;
+  box-shadow:0 0 15px rgba(0,255,255,.3);
+}
+
+#webcam{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:.8;
+}
+
+#ui-layer{
+  position:absolute;
+  top:30px;
+  left:30px;
+  color:#fff;
+  z-index:10;
+  pointer-events:none;
+  font-family:Courier New,monospace;
+}
+
+#score-container{
+  font-size:32px;
+  font-weight:bold;
+  text-shadow:0 0 10px #00d2ff;
+  background:rgba(0,0,0,.3);
+  padding:10px 20px;
+  border-radius:8px;
+  border:1px solid rgba(0,210,255,.3);
+  display:inline-block;
+}
+
+.hud-pill{
+  font-size:12px;
+  margin-top:8px;
+  color:rgba(255,215,0,.88);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  background:rgba(0,0,0,.25);
+  padding:5px 10px;
+  border-radius:4px;
+  display:inline-block;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+#hand-status{
+  color:#ff6b81;
+}
+
+#hand-status.locked{
+  color:#00ffd5;
+  text-shadow:0 0 8px rgba(0,255,213,.5);
+}
+
+.instructions{
+  font-size:14px;
+  margin-top:5px;
+  color:rgba(255,255,255,.7);
+  text-transform:uppercase;
+  letter-spacing:2px;
+}
+
+.modal{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:#00d2ff;
+  background:rgba(16,16,32,.95);
+  padding:42px;
+  border-radius:16px;
+  z-index:30;
+  text-align:center;
+  border:2px solid #00d2ff;
+  box-shadow:0 0 40px rgba(0,210,255,.3);
+  font-family:Courier New,monospace;
+  width:min(460px,calc(100vw - 40px));
+  box-sizing:border-box;
+}
+
+#start-screen.hdx-logo-start{
+  width:min(500px,calc(100vw - 32px));
+  max-height:calc(100vh - 32px);
+  padding:clamp(14px,2.4vw,24px);
+  overflow:hidden;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(8px,1.4vh,14px);
+}
+
+body.hdx-start-ready #start-screen.hdx-logo-start{
+  display:flex;
+}
+
+.hdx-intro-logo{
+  width:min(300px,58vw,52vh);
+  max-width:100%;
+  aspect-ratio:1/1;
+  margin:0 auto;
+  display:grid;
+  place-items:center;
+  filter:drop-shadow(0 0 20px rgba(110,231,255,.3));
+}
+
+.hdx-intro-logo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+
+#start-screen.hdx-logo-start #start-button{
+  margin-top:0;
+  white-space:nowrap;
+  max-width:100%;
+  font-size:clamp(14px,2.1vw,18px);
+  padding:clamp(11px,1.7vh,15px) clamp(22px,4vw,30px);
+}
+
+#logo-splash{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:clamp(44px,9vw,128px);
+  box-sizing:border-box;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(14,165,233,.2),transparent 38%),
+    radial-gradient(circle at 50% 58%,rgba(255,49,95,.1),transparent 42%),
+    #03050d;
+  opacity:1;
+  transition:opacity 300ms ease;
+  overflow:hidden;
+}
+
+#logo-splash.is-fading{
+  opacity:0;
+}
+
+.logo-splash-card{
+  width:min(48vw,460px);
+  max-width:calc(100vw - 88px);
+  max-height:calc(100vh - 88px);
+  aspect-ratio:1/1;
+  display:grid;
+  place-items:center;
+  filter:
+    drop-shadow(0 0 30px rgba(110,231,255,.34))
+    drop-shadow(0 0 58px rgba(255,49,95,.16));
+  animation:logoEnter 500ms cubic-bezier(.2,.85,.22,1) forwards;
+  opacity:0;
+  transform:scale(.9);
+}
+
+.logo-splash-card img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+
+@keyframes logoEnter{
+  from{
+    transform:scale(.86);
+    opacity:0;
+  }
+  to{
+    transform:scale(1);
+    opacity:1;
+  }
+}
+
+#loading{
+  display:none;
+}
+
+#loading h2{
+  margin:0 0 18px;
+  font-size:30px;
+  color:#00d2ff;
+  text-shadow:0 0 10px #00d2ff;
+}
+
+#loading p{
+  color:#fff;
+  line-height:1.5;
+  margin:10px 0;
+}
+
+#loading .warning{
+  color:#ff6b81;
+  font-weight:bold;
+}
+
+#game-over{
+  display:none;
+  color:white;
+  border-color:#ff4757;
+  box-shadow:0 0 40px rgba(255,71,87,.4);
+}
+
+button{
+  background:linear-gradient(45deg,#ff4757,#ff6b81);
+  color:white;
+  border:0;
+  padding:15px 30px;
+  font-size:18px;
+  cursor:pointer;
+  border-radius:30px;
+  margin-top:20px;
+  text-transform:uppercase;
+  font-weight:bold;
+  letter-spacing:1px;
+}
+
+h1{
+  margin:0 0 15px;
+  color:#ff4757;
+  text-transform:uppercase;
+  letter-spacing:3px;
+}
+
+.score-popup{
+  position:absolute;
+  z-index:12;
+  pointer-events:none;
+  color:#ffd700;
+  font:900 22px Courier New,monospace;
+  text-shadow:0 0 10px rgba(255,215,0,.85);
+  transform:translate(-50%,-50%);
+}
+
+@media(max-width:640px){
+  #video-container{
+    width:140px;
+    height:105px;
+    right:12px;
+    bottom:12px;
+  }
+
+  #ui-layer{
+    top:14px;
+    left:14px;
+  }
+
+  #score-container{
+    font-size:20px;
+    padding:8px 12px;
+  }
+
+  .hud-pill{
+    font-size:10px;
+    padding:4px 7px;
+  }
+
+  .modal{
+    padding:28px 20px;
+  }
+
+  #logo-splash{
+    padding:clamp(42px,14vw,90px);
+  }
+
+  .logo-splash-card{
+    width:min(68vw,300px);
+    max-width:calc(100vw - 84px);
+    max-height:calc(100vh - 84px);
+  }
+
+  #start-screen.hdx-logo-start{
+    width:min(390px,calc(100vw - 24px));
+    max-height:calc(100vh - 24px);
+    padding:16px;
+    gap:10px;
+  }
+
+  .hdx-intro-logo{
+    width:min(230px,62vw,46vh);
+  }
+
+  #start-screen.hdx-logo-start #start-button{
+    font-size:14px;
+    padding:11px 22px;
+  }
+}
+
+@media(max-height:560px){
+  #start-screen.hdx-logo-start{
+    padding:10px 14px;
+    gap:8px;
+  }
+
+  .hdx-intro-logo{
+    width:min(220px,45vw,42vh);
+  }
+
+  #start-screen.hdx-logo-start #start-button{
+    padding:9px 20px;
+    font-size:13px;
+  }
+}
 </style>
-<script src="config.js"></script>
+
+<script defer src="audio-sfx.js"></script>
 </head>
+
 <body>
-<div id="start-screen" class="modal"><h2>CAMERA CONTROL</h2><p>This game uses your webcam to track your hand and steer the drone.</p><p class="warning">Press Start Game, then allow camera access when your browser asks.</p><button id="start-button" type="button">Start Game</button></div>
-<div id="loading" class="modal"><h2>INITIALIZING SYSTEMS</h2><p>Loading MediaPipe hand tracking and starting the camera.</p><p class="warning">Keep your hand visible once the game starts.</p></div>
-<div id="ui-layer"><div id="score-container">SCORE: <span id="score">0</span></div><br><div class="hud-pill">BEST: <span id="best-score">0</span></div><div id="speedDisplay" class="hud-pill">SPEED: <span id="speed-level">1</span></div><div id="hand-status" class="hud-pill">SEARCHING HAND</div><div class="instructions">Control with Hand Position</div></div>
-<div id="video-container"><video id="webcam" autoplay playsinline muted></video></div>
-<div id="game-over" class="modal"><h1>SYSTEM FAILURE</h1><p style="font-size:1.2em;color:#ccc">MISSION SCORE: <span id="final-score" style="color:white;font-weight:bold">0</span></p><button onclick="restartGame()">REBOOT SYSTEM</button></div>
+<div id="logo-splash">
+  <div class="logo-splash-card">
+    <img src="./logo.png" alt="Hand Drone XS" decoding="async" />
+  </div>
+</div>
+
+<div id="start-screen" class="modal hdx-logo-start">
+  <div class="hdx-intro-logo">
+    <img src="./logo.png" alt="Hand Drone XS" decoding="async" />
+  </div>
+  <button id="start-button" type="button">START GAME</button>
+</div>
+
+<div id="loading" class="modal">
+  <h2>INITIALIZING SYSTEMS</h2>
+  <p>Loading hand tracking and starting the camera.</p>
+  <p class="warning">Keep your hand visible once the game starts.</p>
+</div>
+
+<div id="ui-layer">
+  <div id="score-container">SCORE: <span id="score">0</span></div>
+  <br>
+  <div class="hud-pill">BEST: <span id="best-score">0</span></div>
+  <div id="speedDisplay" class="hud-pill">SPEED: <span id="speed-level">1</span></div>
+  <div id="hand-status" class="hud-pill">SEARCHING HAND</div>
+  <div class="instructions">Control with Hand Position</div>
+</div>
+
+<div id="video-container">
+  <video id="webcam" autoplay playsinline muted></video>
+</div>
+
+<audio id="game-music" src="./Battlefield%20Ascent.mp3" preload="auto" loop></audio>
+
+<div id="game-over" class="modal">
+  <h1>YOU KINDA HIT A TREE THERE!</h1>
+  <p style="font-size:1.2em;color:#ccc">SCORE: <span id="final-score" style="color:white;font-weight:bold">0</span></p>
+  <button onclick="restartGame()">RESTART</button>
+</div>
+
 <script type="module">
 import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
-import {FilesetResolver,HandLandmarker} from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0';
-const parentConfig=(()=>{try{return window.parent&&window.parent!==window?window.parent.GAME_CONFIG:null}catch(_){return null}})();
-const CFG=Object.assign({},window.GAME_CONFIG||{},parentConfig||{});
-const isMobile=/Mobi|Android/i.test(navigator.userAgent);
-const COLORS={sky:0x1a1a2e,ground:0x16213e,grid:0x0f3460,droneBody:0x222222,droneLight:0x00d2ff,treeLight:0x2d6a4f,ring:0xffd700};
-let scene,camera,renderer,drone,particles,floorGrid,treeMesh;let rings=[],treeData=[],engineTrail=[],burstPool=[],scorePopups=[];let gameActive=false,score=0,ringsCollected=0,currentSpeedLevel=CFG.initialSpeedLevel||1,currentSpeed=CFG.baseSpeed||.15,targetX=0,targetY=5;let handLandmarker,lastVideoTime=-1,handLoopStarted=false,handVisible=false;let smoothedHandX=.5,smoothedHandY=.5,smoothedTargetX=0,smoothedTargetY=5,shakeTime=0,shakeStrength=0,lastHitTime=-Infinity;
-const clock=new THREE.Clock();
-const startScreen=document.getElementById('start-screen'),loading=document.getElementById('loading'),startButton=document.getElementById('start-button'),handStatus=document.getElementById('hand-status'),bestScoreEl=document.getElementById('best-score'),speedLevelEl=document.getElementById('speed-level');let bestScore=loadBestScore();bestScoreEl.innerText=bestScore;
-function loadBestScore(){try{return Number(localStorage.getItem('handDroneBestScore')||0)}catch(_){return 0}}function saveBestScore(v){bestScore=Math.max(bestScore,v);bestScoreEl.innerText=bestScore;try{localStorage.setItem('handDroneBestScore',String(bestScore))}catch(_){}}
-function showError(t,m){loading.style.display='block';loading.innerHTML=`<h2 style="color:#ff4757">${t}</h2><p>${m}</p>`}function setHandStatus(l){if(l===handVisible)return;handVisible=l;handStatus.innerText=l?'HAND LOCKED':'SEARCHING HAND';handStatus.classList.toggle('locked',l)}
-function initScene(){scene=new THREE.Scene();scene.background=new THREE.Color(COLORS.sky);scene.fog=new THREE.Fog(COLORS.sky,30,80);camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,1000);camera.position.set(0,5,12);renderer=new THREE.WebGLRenderer({antialias:!isMobile,powerPreference:'high-performance'});renderer.setPixelRatio(isMobile?1:Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=!isMobile;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=isMobile?THREE.NoToneMapping:THREE.ACESFilmicToneMapping;document.body.appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x080820,.65));const dirLight=new THREE.DirectionalLight(0xffffff,1.25);dirLight.position.set(10,20,10);dirLight.castShadow=!isMobile;dirLight.shadow.mapSize.width=isMobile?512:2048;dirLight.shadow.mapSize.height=isMobile?512:2048;dirLight.shadow.camera.left=-25;dirLight.shadow.camera.right=25;dirLight.shadow.camera.top=25;dirLight.shadow.camera.bottom=-25;scene.add(dirLight);const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshStandardMaterial({color:COLORS.ground,roughness:.8,metalness:.2}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=!isMobile;scene.add(ground);floorGrid=new THREE.GridHelper(500,100,0xe94560,COLORS.grid);floorGrid.position.y=.05;scene.add(floorGrid);createParticles();createEngineTrail();createBurstPool();createInstancedTrees();createDrone();}
-function createParticles(){const c=isMobile?220:400,g=new THREE.BufferGeometry(),p=new Float32Array(c*3);for(let i=0;i<c;i++){p[i*3]=(Math.random()-.5)*100;p[i*3+1]=Math.random()*40;p[i*3+2]=(Math.random()-.5)*200}g.setAttribute('position',new THREE.BufferAttribute(p,3));particles=new THREE.Points(g,new THREE.PointsMaterial({color:0x00d2ff,size:.2,transparent:true,opacity:.6}));scene.add(particles)}
-function createProceduralDrone(){const g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:COLORS.droneBody,roughness:.3,metalness:.8}),body=new THREE.Mesh(new THREE.BoxGeometry(1,.15,.6),mat);body.castShadow=!isMobile;g.add(body);const propMat=new THREE.MeshBasicMaterial({color:COLORS.droneLight,transparent:true,opacity:.28,side:THREE.DoubleSide,depthWrite:false});[{x:-.8,z:.6},{x:.8,z:.6},{x:-.8,z:-.6},{x:.8,z:-.6}].forEach(pos=>{const arm=new THREE.Mesh(new THREE.BoxGeometry(.1,.05,1.2),mat);arm.position.set(pos.x/1.6,0,pos.z/1.6);arm.lookAt(pos.x,0,pos.z);g.add(arm);const prop=new THREE.Group();prop.position.set(pos.x,.16,pos.z);prop.userData.isProp=true;prop.add(new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,.012,32),propMat.clone()));g.add(prop)});const engine=new THREE.Mesh(new THREE.BoxGeometry(.6,.1,.1),new THREE.MeshStandardMaterial({color:0xff4757,emissive:0xff4757,emissiveIntensity:2.4}));engine.position.set(0,0,.35);g.add(engine);g.add(new THREE.PointLight(0xff4757,1.2,4));g.position.set(0,5,0);return g}
-function createDrone(){drone=createProceduralDrone();scene.add(drone);(async()=>{try{const mods=await Promise.all([import('https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js'),import('https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/DRACOLoader.js')]);const loader=new mods[0].GLTFLoader(),draco=new mods[1].DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');loader.setDRACOLoader(draco);loader.load(CFG.droneModelPath||'/models/drone.glb',gltf=>{const model=gltf.scene;model.position.copy(drone.position);model.rotation.copy(drone.rotation);model.scale.setScalar(isMobile?.9:1);model.traverse(o=>{if(o.isMesh){o.castShadow=!isMobile;o.receiveShadow=!isMobile}});scene.remove(drone);drone=model;scene.add(drone)},undefined,()=>{});}catch(e){console.warn('Drone GLB loader unavailable; using procedural fallback.',e)}})()}
-function createEngineTrail(){const mat=new THREE.MeshBasicMaterial({color:0xff4757,transparent:true,opacity:0,depthWrite:false});for(let i=0;i<(CFG.engineTrailPoolSize||24);i++){const o=new THREE.Mesh(new THREE.SphereGeometry(.08,8,8),mat.clone());o.visible=false;o.userData={life:0,maxLife:1};scene.add(o);engineTrail.push(o)}}
-function createBurstPool(){const geo=new THREE.SphereGeometry(.06,8,8),mat=new THREE.MeshBasicMaterial({color:COLORS.ring,transparent:true,opacity:0,depthWrite:false});for(let i=0;i<(CFG.burstPoolSize||20);i++){const p=new THREE.Mesh(geo,mat.clone());p.visible=false;p.userData={life:0,maxLife:CFG.burstLifeSeconds||1,velocity:new THREE.Vector3()};scene.add(p);burstPool.push(p)}}
-function emitEngineTrail(){const o=engineTrail.find(p=>p.userData.life<=0);if(!o||!drone)return;const rear=new THREE.Vector3((Math.random()-.5)*.25,(Math.random()-.5)*.12,.65);drone.localToWorld(rear);o.position.copy(rear);o.scale.setScalar(1);o.material.opacity=.45;o.visible=true;o.userData.life=.6;o.userData.maxLife=.6}
-function createBurst(pos,color=COLORS.ring){let emitted=0;for(const p of burstPool){if(p.userData.life>0)continue;p.position.copy(pos);p.material.color.setHex(color);p.material.opacity=1;p.scale.setScalar(1);p.visible=true;p.userData.life=p.userData.maxLife=CFG.burstLifeSeconds||1;p.userData.velocity.set((Math.random()-.5)*.42,(Math.random()-.5)*.42,(Math.random()-.5)*.42);if(++emitted>=18)break}}
-function createInstancedTrees(){const total=CFG.treeCount||24,geo=new THREE.ConeGeometry(1.8,4,7);geo.translate(0,3,0);geo.computeVertexNormals();treeMesh=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({color:COLORS.treeLight,roughness:.8,flatShading:true,emissive:0x062817,emissiveIntensity:.2}),total);treeMesh.castShadow=!isMobile;treeMesh.receiveShadow=!isMobile;scene.add(treeMesh);for(let i=0;i<total;i++)resetTree(i,-30-i*12)}
-function resetTree(i,z){let x=Math.random()*50-25;if(Math.abs(x)<4)x=8;const s=.9+Math.random()*.7;treeData[i]={x,z,scale:s,radius:1.5*s,rot:Math.random()*Math.PI};updateTreeMatrix(i);if(Math.random()< (CFG.ringSpawnChance||.6))spawnRing(z,x)}
-function updateTreeMatrix(i){const d=treeData[i],m=new THREE.Matrix4();m.compose(new THREE.Vector3(d.x,0,d.z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,d.rot,0)),new THREE.Vector3(d.scale,d.scale,d.scale));treeMesh.setMatrixAt(i,m);treeMesh.instanceMatrix.needsUpdate=true}
-function spawnRing(z,treeX){const ring=new THREE.Mesh(new THREE.TorusGeometry(1.3,.15,12,32),new THREE.MeshStandardMaterial({color:COLORS.ring,emissive:COLORS.ring,emissiveIntensity:1.1,metalness:.8,roughness:.2}));let x=Math.random()*24-12;if(Math.abs(x-treeX)<4)x=-x;ring.position.set(x,3+Math.random()*6,z);ring.userData={radius:1.3,active:true,pulseSeed:Math.random()*Math.PI*2};ring.add(new THREE.PointLight(COLORS.ring,.7,5));scene.add(ring);rings.push(ring)}
-function createScorePopup(position,text){const el=document.createElement('div');el.className='score-popup';el.textContent=text;document.body.appendChild(el);scorePopups.push({el,position:position.clone(),life:.9,maxLife:.9,rise:0})}
-function updateEffects(dt,fs){if(gameActive)emitEngineTrail();engineTrail.forEach(o=>{if(o.userData.life<=0)return;o.userData.life-=dt;o.position.z+=currentSpeed*1.8*fs;o.position.y+=.02*fs;const t=Math.max(o.userData.life/o.userData.maxLife,0);o.material.opacity=.45*t;o.scale.setScalar(1+(1-t)*2.8);if(o.userData.life<=0)o.visible=false});burstPool.forEach(p=>{if(p.userData.life<=0)return;p.userData.life-=dt;p.position.addScaledVector(p.userData.velocity,fs);p.position.z+=currentSpeed*fs;const t=Math.max(p.userData.life/p.userData.maxLife,0);p.material.opacity=t;p.scale.setScalar(.5+(1-t)*1.8);if(p.userData.life<=0)p.visible=false});for(let i=scorePopups.length-1;i>=0;i--){const pop=scorePopups[i];pop.life-=dt;pop.rise+=dt*1.7;const pr=pop.position.clone();pr.y+=pop.rise;pr.project(camera);pop.el.style.left=`${(pr.x*.5+.5)*innerWidth}px`;pop.el.style.top=`${(-pr.y*.5+.5)*innerHeight}px`;pop.el.style.opacity=Math.max(pop.life/pop.maxLife,0);if(pop.life<=0){pop.el.remove();scorePopups.splice(i,1)}}}
-function updateCamera(dt){camera.fov+=(60+(currentSpeedLevel-1)*1.3-camera.fov)*.04;camera.updateProjectionMatrix();camera.position.lerp(new THREE.Vector3(drone.position.x*.08,5+(drone.position.y-5)*.12,12),.035);if(shakeTime>0){shakeTime-=dt;camera.position.x+=(Math.random()-.5)*shakeStrength;camera.position.y+=(Math.random()-.5)*shakeStrength;shakeStrength*=.92}camera.lookAt(drone.position.x*.15,4+(drone.position.y-5)*.08,0)}
-function calculateSpeedMultiplier(){return 1+(currentSpeedLevel-1)*(CFG.speedIncrement||.12)}function canTakeHit(){return performance.now()-lastHitTime>=(CFG.invincibilityMs||1000)}function applyHit(){lastHitTime=performance.now();gameOver()}
-function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),1/30),fs=dt*60;updateEffects(dt,fs);if(!gameActive){updateCamera(dt);renderer.render(scene,camera);return}drone.position.x+=(targetX-drone.position.x)*(CFG.droneLerpSpeed||.095)*fs;drone.position.y+=(targetY-drone.position.y)*(CFG.droneLerpSpeed||.095)*fs;drone.position.y=Math.max(1,Math.min(18,drone.position.y));drone.position.x=Math.max(-20,Math.min(20,drone.position.x));drone.rotation.z=-(targetX-drone.position.x)*.12;drone.rotation.x=(targetY-drone.position.y)*.04;drone.traverse(o=>{if(o.userData&&o.userData.isProp)o.rotation.y+=1.8*fs});currentSpeed=Math.min((CFG.baseSpeed||.15)*calculateSpeedMultiplier(),CFG.maxBaseGameSpeed||2);speedLevelEl.textContent=String(currentSpeedLevel);floorGrid.position.z+=currentSpeed*fs;if(floorGrid.position.z>10)floorGrid.position.z=0;const pos=particles.geometry.attributes.position.array;for(let i=2;i<pos.length;i+=3){pos[i]+=currentSpeed*2*fs;if(pos[i]>20)pos[i]=-150}particles.geometry.attributes.position.needsUpdate=true;for(let i=0;i<treeData.length;i++){const t=treeData[i];t.z+=currentSpeed*fs;const dx=drone.position.x-t.x,dz=drone.position.z-t.z;if(Math.abs(dz)<1&&Math.abs(dx)<2.5&&drone.position.y<t.radius*3&&canTakeHit())applyHit();if(t.z>(CFG.treeRecycleZ||18))resetTree(i,CFG.treeSpawnZ||-120);else updateTreeMatrix(i)}for(let i=rings.length-1;i>=0;i--){const r=rings[i];r.position.z+=currentSpeed*fs;r.rotation.z+=.03*fs;r.rotation.y+=.02*fs;const pulse=1+Math.sin(performance.now()*.005+r.userData.pulseSeed)*.08;r.scale.setScalar(pulse);if(r.position.distanceTo(drone.position)<1.6&&r.userData.active){r.userData.active=false;score+=10;ringsCollected++;document.getElementById('score').innerText=score;createBurst(r.position);createScorePopup(r.position,'+10');scene.remove(r);rings.splice(i,1);if(ringsCollected%(CFG.ringsPerLevel||20)===0)currentSpeedLevel=Math.min((CFG.maxSpeedLevel||8),currentSpeedLevel+1)}else if(r.position.z>20){scene.remove(r);rings.splice(i,1)}}updateCamera(dt);renderer.render(scene,camera)}
-async function initHandTracking(){loading.style.display='block';try{const vision=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm');handLandmarker=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:1});startWebcam()}catch(e){console.error(e);showError('MEDIAPIPE FAILED TO LOAD','Check your internet connection, refresh the page, and make sure CDN requests are not blocked.')}}
-function startWebcam(){const video=document.getElementById('webcam');if(!navigator.mediaDevices?.getUserMedia){showError('CAMERA NOT SUPPORTED','Try Chrome or Edge on a device with a webcam.');return}navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{video.srcObject=stream;video.addEventListener('loadeddata',()=>{loading.style.display='none';gameActive=true;clock.start();if(!handLoopStarted){handLoopStarted=true;predictWebcam()}},{once:true})}).catch(e=>{console.error(e);showError('CAMERA ACCESS DENIED','Refresh the page and allow camera access.')})}
-function stopCameraStream(){const v=document.getElementById('webcam'),s=v&&v.srcObject;if(s&&s.getTracks){s.getTracks().forEach(t=>t.stop());v.srcObject=null}}
-function applyDeadZone(v,d){if(Math.abs(v)<d)return 0;return v>0?v-d:v+d}async function predictWebcam(){const video=document.getElementById('webcam');if(lastVideoTime!==video.currentTime&&handLandmarker){lastVideoTime=video.currentTime;const det=handLandmarker.detectForVideo(video,performance.now()),has=!!(det.landmarks&&det.landmarks.length);setHandStatus(has);if(has){const h=det.landmarks[0][9];smoothedHandX=smoothedHandX*(1-(CFG.handSmoothing||.12))+h.x*(CFG.handSmoothing||.12);smoothedHandY=smoothedHandY*(1-(CFG.handSmoothing||.12))+h.y*(CFG.handSmoothing||.12);let rx=(.5-smoothedHandX)*40,ry=(1-smoothedHandY)*16+1;rx=applyDeadZone(rx,CFG.handDeadZoneX||.6);ry=applyDeadZone(ry,CFG.handDeadZoneY||.4);smoothedTargetX=smoothedTargetX*(1-(CFG.targetLerpSpeed||.11))+rx*(CFG.targetLerpSpeed||.11);smoothedTargetY=smoothedTargetY*(1-(CFG.targetLerpSpeed||.11))+ry*(CFG.targetLerpSpeed||.11);targetX=smoothedTargetX;targetY=smoothedTargetY}}requestAnimationFrame(predictWebcam)}
-function gameOver(){gameActive=false;stopCameraStream();shakeTime=.35;shakeStrength=.8;saveBestScore(score);document.getElementById('final-score').innerText=score;document.getElementById('game-over').style.display='block'}
-window.restartGame=function(){score=0;ringsCollected=0;currentSpeedLevel=CFG.initialSpeedLevel||1;lastHitTime=-Infinity;document.getElementById('score').innerText='0';document.getElementById('game-over').style.display='none';rings.forEach(r=>scene.remove(r));rings=[];drone.position.set(0,5,0);drone.rotation.set(0,0,0);targetX=0;targetY=5;smoothedTargetX=0;smoothedTargetY=5;for(let i=0;i<treeData.length;i++)resetTree(i,-30-i*12);initHandTracking()}
-startButton.addEventListener('click',()=>{startScreen.style.display='none';initHandTracking()});document.addEventListener('visibilitychange',()=>{if(document.hidden)stopCameraStream()});addEventListener('beforeunload',stopCameraStream);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});initScene();animate();
+import { FilesetResolver, HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0';
+
+const DEFAULT_CONFIG = {
+  handSmoothing: 0.12,
+  handDeadZoneX: 0.6,
+  handDeadZoneY: 0.4,
+  targetLerpSpeed: 0.11,
+  droneLerpSpeed: 0.095,
+  initialSpeedLevel: 1,
+  baseSpeed: 0.15,
+  maxSpeedLevel: 8,
+  ringsPerLevel: 20,
+  speedIncrement: 0.12,
+  maxBaseGameSpeed: 2.0,
+  treeCount: 24,
+  treeRecycleZ: 18,
+  treeSpawnZ: -120,
+  ringSpawnChance: 0.6,
+  burstPoolSize: 20,
+  burstLifeSeconds: 1.0,
+  engineTrailPoolSize: 24,
+  invincibilityMs: 1000,
+  droneModelPath: '/models/drone.glb'
+};
+
+const parentConfig = (() => {
+  try {
+    return window.parent && window.parent !== window ? window.parent.GAME_CONFIG : null;
+  } catch (_) {
+    return null;
+  }
+})();
+
+const CFG = Object.assign({}, DEFAULT_CONFIG, window.GAME_CONFIG || {}, parentConfig || {});
+window.GAME_CONFIG = CFG;
+
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+const COLORS = {
+  sky: 0x1a1a2e,
+  ground: 0x16213e,
+  grid: 0x0f3460,
+  droneBody: 0x222222,
+  droneLight: 0x00d2ff,
+  treeLight: 0x2d6a4f,
+  ring: 0xffd700
+};
+
+let scene, camera, renderer, drone, particles, floorGrid, treeMesh;
+let rings = [];
+let treeData = [];
+let engineTrail = [];
+let burstPool = [];
+let scorePopups = [];
+
+let gameActive = false;
+let score = 0;
+let ringsCollected = 0;
+let currentSpeedLevel = CFG.initialSpeedLevel || 1;
+let currentSpeed = CFG.baseSpeed || 0.15;
+let targetX = 0;
+let targetY = 5;
+
+let handLandmarker;
+let lastVideoTime = -1;
+let handLoopStarted = false;
+let handVisible = false;
+
+let smoothedHandX = 0.5;
+let smoothedHandY = 0.5;
+let smoothedTargetX = 0;
+let smoothedTargetY = 5;
+
+let shakeTime = 0;
+let shakeStrength = 0;
+let lastHitTime = -Infinity;
+
+const clock = new THREE.Clock();
+
+const startScreen = document.getElementById('start-screen');
+const loading = document.getElementById('loading');
+const startButton = document.getElementById('start-button');
+const handStatus = document.getElementById('hand-status');
+const bestScoreEl = document.getElementById('best-score');
+const speedLevelEl = document.getElementById('speed-level');
+const gameMusic = document.getElementById('game-music');
+
+let bestScore = loadBestScore();
+bestScoreEl.innerText = bestScore;
+
+function loadBestScore() {
+  try {
+    return Number(localStorage.getItem('handDroneBestScore') || 0);
+  } catch (_) {
+    return 0;
+  }
+}
+
+function saveBestScore(value) {
+  bestScore = Math.max(bestScore, value);
+  bestScoreEl.innerText = bestScore;
+
+  try {
+    localStorage.setItem('handDroneBestScore', String(bestScore));
+  } catch (_) {}
+}
+
+function showError(title, message) {
+  loading.style.display = 'block';
+  loading.innerHTML = `<h2 style="color:#ff4757">${title}</h2><p>${message}</p>`;
+}
+
+function setHandStatus(locked) {
+  if (locked === handVisible) return;
+
+  handVisible = locked;
+  handStatus.innerText = locked ? 'HAND LOCKED' : 'SEARCHING HAND';
+  handStatus.classList.toggle('locked', locked);
+}
+
+function hideSplashAfterDelay() {
+  const splash = document.getElementById('logo-splash');
+
+  window.setTimeout(() => {
+    if (splash) splash.classList.add('is-fading');
+
+    window.setTimeout(() => {
+      if (splash) splash.remove();
+      document.body.classList.add('hdx-start-ready');
+    }, 350);
+  }, 1550);
+}
+
+function initScene() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(COLORS.sky);
+  scene.fog = new THREE.Fog(COLORS.sky, 30, 80);
+
+  camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
+  camera.position.set(0, 5, 12);
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: !isMobile,
+    powerPreference: 'high-performance'
+  });
+
+  renderer.setPixelRatio(isMobile ? 1 : Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = !isMobile;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = isMobile ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+
+  document.body.appendChild(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x080820, 0.65));
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.25);
+  dirLight.position.set(10, 20, 10);
+  dirLight.castShadow = !isMobile;
+  dirLight.shadow.mapSize.width = isMobile ? 512 : 2048;
+  dirLight.shadow.mapSize.height = isMobile ? 512 : 2048;
+  dirLight.shadow.camera.left = -25;
+  dirLight.shadow.camera.right = 25;
+  dirLight.shadow.camera.top = 25;
+  dirLight.shadow.camera.bottom = -25;
+  scene.add(dirLight);
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(500, 500),
+    new THREE.MeshStandardMaterial({
+      color: COLORS.ground,
+      roughness: 0.8,
+      metalness: 0.2
+    })
+  );
+
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = !isMobile;
+  scene.add(ground);
+
+  floorGrid = new THREE.GridHelper(500, 100, 0xe94560, COLORS.grid);
+  floorGrid.position.y = 0.05;
+  scene.add(floorGrid);
+
+  createParticles();
+  createEngineTrail();
+  createBurstPool();
+  createInstancedTrees();
+  createDrone();
+}
+
+function createParticles() {
+  const count = isMobile ? 220 : 400;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 100;
+    positions[i * 3 + 1] = Math.random() * 40;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+  particles = new THREE.Points(
+    geometry,
+    new THREE.PointsMaterial({
+      color: 0x00d2ff,
+      size: 0.2,
+      transparent: true,
+      opacity: 0.6
+    })
+  );
+
+  scene.add(particles);
+}
+
+function createProceduralDrone() {
+  const group = new THREE.Group();
+
+  const material = new THREE.MeshStandardMaterial({
+    color: COLORS.droneBody,
+    roughness: 0.3,
+    metalness: 0.8
+  });
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.15, 0.6), material);
+  body.castShadow = !isMobile;
+  group.add(body);
+
+  const propMaterial = new THREE.MeshBasicMaterial({
+    color: COLORS.droneLight,
+    transparent: true,
+    opacity: 0.28,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+
+  [
+    { x: -0.8, z: 0.6 },
+    { x: 0.8, z: 0.6 },
+    { x: -0.8, z: -0.6 },
+    { x: 0.8, z: -0.6 }
+  ].forEach((position) => {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 1.2), material);
+    arm.position.set(position.x / 1.6, 0, position.z / 1.6);
+    arm.lookAt(position.x, 0, position.z);
+    group.add(arm);
+
+    const prop = new THREE.Group();
+    prop.position.set(position.x, 0.16, position.z);
+    prop.userData.isProp = true;
+    prop.add(new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.012, 32), propMaterial.clone()));
+    group.add(prop);
+  });
+
+  const engine = new THREE.Mesh(
+    new THREE.BoxGeometry(0.6, 0.1, 0.1),
+    new THREE.MeshStandardMaterial({
+      color: 0xff4757,
+      emissive: 0xff4757,
+      emissiveIntensity: 2.4
+    })
+  );
+
+  engine.position.set(0, 0, 0.35);
+  group.add(engine);
+  group.add(new THREE.PointLight(0xff4757, 1.2, 4));
+
+  group.position.set(0, 5, 0);
+  return group;
+}
+
+function createDrone() {
+  drone = createProceduralDrone();
+  scene.add(drone);
+
+  (async () => {
+    try {
+      const modules = await Promise.all([
+        import('https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js'),
+        import('https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/DRACOLoader.js')
+      ]);
+
+      const loader = new modules[0].GLTFLoader();
+      const draco = new modules[1].DRACOLoader();
+
+      draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      loader.setDRACOLoader(draco);
+
+      loader.load(
+        CFG.droneModelPath || '/models/drone.glb',
+        (gltf) => {
+          const model = gltf.scene;
+          model.position.copy(drone.position);
+          model.rotation.copy(drone.rotation);
+          model.scale.setScalar(isMobile ? 0.9 : 1);
+
+          model.traverse((object) => {
+            if (object.isMesh) {
+              object.castShadow = !isMobile;
+              object.receiveShadow = !isMobile;
+            }
+          });
+
+          scene.remove(drone);
+          drone = model;
+          scene.add(drone);
+        },
+        undefined,
+        () => {}
+      );
+    } catch (error) {
+      console.warn('Drone GLB loader unavailable; using procedural fallback.', error);
+    }
+  })();
+}
+
+function createEngineTrail() {
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xff4757,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+
+  for (let i = 0; i < (CFG.engineTrailPoolSize || 24); i++) {
+    const particle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), material.clone());
+    particle.visible = false;
+    particle.userData = { life: 0, maxLife: 1 };
+    scene.add(particle);
+    engineTrail.push(particle);
+  }
+}
+
+function createBurstPool() {
+  const geometry = new THREE.SphereGeometry(0.06, 8, 8);
+  const material = new THREE.MeshBasicMaterial({
+    color: COLORS.ring,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+
+  for (let i = 0; i < (CFG.burstPoolSize || 20); i++) {
+    const particle = new THREE.Mesh(geometry, material.clone());
+    particle.visible = false;
+    particle.userData = {
+      life: 0,
+      maxLife: CFG.burstLifeSeconds || 1,
+      velocity: new THREE.Vector3()
+    };
+
+    scene.add(particle);
+    burstPool.push(particle);
+  }
+}
+
+function emitEngineTrail() {
+  const particle = engineTrail.find((item) => item.userData.life <= 0);
+  if (!particle || !drone) return;
+
+  const rear = new THREE.Vector3((Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.12, 0.65);
+  drone.localToWorld(rear);
+
+  particle.position.copy(rear);
+  particle.scale.setScalar(1);
+  particle.material.opacity = 0.45;
+  particle.visible = true;
+  particle.userData.life = 0.6;
+  particle.userData.maxLife = 0.6;
+}
+
+function createBurst(position, color = COLORS.ring) {
+  let emitted = 0;
+
+  for (const particle of burstPool) {
+    if (particle.userData.life > 0) continue;
+
+    particle.position.copy(position);
+    particle.material.color.setHex(color);
+    particle.material.opacity = 1;
+    particle.scale.setScalar(1);
+    particle.visible = true;
+    particle.userData.life = particle.userData.maxLife = CFG.burstLifeSeconds || 1;
+    particle.userData.velocity.set(
+      (Math.random() - 0.5) * 0.42,
+      (Math.random() - 0.5) * 0.42,
+      (Math.random() - 0.5) * 0.42
+    );
+
+    emitted += 1;
+    if (emitted >= 18) break;
+  }
+}
+
+function createInstancedTrees() {
+  const total = CFG.treeCount || 24;
+  const geometry = new THREE.ConeGeometry(1.8, 4, 7);
+
+  geometry.translate(0, 3, 0);
+  geometry.computeVertexNormals();
+
+  treeMesh = new THREE.InstancedMesh(
+    geometry,
+    new THREE.MeshStandardMaterial({
+      color: COLORS.treeLight,
+      roughness: 0.8,
+      flatShading: true,
+      emissive: 0x062817,
+      emissiveIntensity: 0.2
+    }),
+    total
+  );
+
+  treeMesh.castShadow = !isMobile;
+  treeMesh.receiveShadow = !isMobile;
+  scene.add(treeMesh);
+
+  for (let i = 0; i < total; i++) {
+    resetTree(i, -30 - i * 12);
+  }
+}
+
+function resetTree(index, z) {
+  let x = Math.random() * 50 - 25;
+  if (Math.abs(x) < 4) x = 8;
+
+  const scale = 0.9 + Math.random() * 0.7;
+
+  treeData[index] = {
+    x,
+    z,
+    scale,
+    radius: 1.5 * scale,
+    rot: Math.random() * Math.PI
+  };
+
+  updateTreeMatrix(index);
+
+  if (Math.random() < (CFG.ringSpawnChance || 0.6)) {
+    spawnRing(z, x);
+  }
+}
+
+function updateTreeMatrix(index) {
+  const data = treeData[index];
+  const matrix = new THREE.Matrix4();
+
+  matrix.compose(
+    new THREE.Vector3(data.x, 0, data.z),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(0, data.rot, 0)),
+    new THREE.Vector3(data.scale, data.scale, data.scale)
+  );
+
+  treeMesh.setMatrixAt(index, matrix);
+  treeMesh.instanceMatrix.needsUpdate = true;
+}
+
+function spawnRing(z, treeX) {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1.3, 0.15, 12, 32),
+    new THREE.MeshStandardMaterial({
+      color: COLORS.ring,
+      emissive: COLORS.ring,
+      emissiveIntensity: 1.1,
+      metalness: 0.8,
+      roughness: 0.2
+    })
+  );
+
+  let x = Math.random() * 24 - 12;
+  if (Math.abs(x - treeX) < 4) x = -x;
+
+  ring.position.set(x, 3 + Math.random() * 6, z);
+  ring.userData = {
+    radius: 1.3,
+    active: true,
+    pulseSeed: Math.random() * Math.PI * 2
+  };
+
+  ring.add(new THREE.PointLight(COLORS.ring, 0.7, 5));
+  scene.add(ring);
+  rings.push(ring);
+}
+
+function createScorePopup(position, text) {
+  const element = document.createElement('div');
+
+  element.className = 'score-popup';
+  element.textContent = text;
+  document.body.appendChild(element);
+
+  scorePopups.push({
+    el: element,
+    position: position.clone(),
+    life: 0.9,
+    maxLife: 0.9,
+    rise: 0
+  });
+}
+
+function updateEffects(dt, frameScale) {
+  if (gameActive) emitEngineTrail();
+
+  engineTrail.forEach((particle) => {
+    if (particle.userData.life <= 0) return;
+
+    particle.userData.life -= dt;
+    particle.position.z += currentSpeed * 1.8 * frameScale;
+    particle.position.y += 0.02 * frameScale;
+
+    const t = Math.max(particle.userData.life / particle.userData.maxLife, 0);
+    particle.material.opacity = 0.45 * t;
+    particle.scale.setScalar(1 + (1 - t) * 2.8);
+
+    if (particle.userData.life <= 0) particle.visible = false;
+  });
+
+  burstPool.forEach((particle) => {
+    if (particle.userData.life <= 0) return;
+
+    particle.userData.life -= dt;
+    particle.position.addScaledVector(particle.userData.velocity, frameScale);
+    particle.position.z += currentSpeed * frameScale;
+
+    const t = Math.max(particle.userData.life / particle.userData.maxLife, 0);
+    particle.material.opacity = t;
+    particle.scale.setScalar(0.5 + (1 - t) * 1.8);
+
+    if (particle.userData.life <= 0) particle.visible = false;
+  });
+
+  for (let i = scorePopups.length - 1; i >= 0; i--) {
+    const popup = scorePopups[i];
+
+    popup.life -= dt;
+    popup.rise += dt * 1.7;
+
+    const projected = popup.position.clone();
+    projected.y += popup.rise;
+    projected.project(camera);
+
+    popup.el.style.left = `${(projected.x * 0.5 + 0.5) * innerWidth}px`;
+    popup.el.style.top = `${(-projected.y * 0.5 + 0.5) * innerHeight}px`;
+    popup.el.style.opacity = Math.max(popup.life / popup.maxLife, 0);
+
+    if (popup.life <= 0) {
+      popup.el.remove();
+      scorePopups.splice(i, 1);
+    }
+  }
+}
+
+function updateCamera(dt) {
+  camera.fov += (60 + (currentSpeedLevel - 1) * 1.3 - camera.fov) * 0.04;
+  camera.updateProjectionMatrix();
+
+  camera.position.lerp(
+    new THREE.Vector3(drone.position.x * 0.08, 5 + (drone.position.y - 5) * 0.12, 12),
+    0.035
+  );
+
+  if (shakeTime > 0) {
+    shakeTime -= dt;
+    camera.position.x += (Math.random() - 0.5) * shakeStrength;
+    camera.position.y += (Math.random() - 0.5) * shakeStrength;
+    shakeStrength *= 0.92;
+  }
+
+  camera.lookAt(drone.position.x * 0.15, 4 + (drone.position.y - 5) * 0.08, 0);
+}
+
+function calculateSpeedMultiplier() {
+  return 1 + (currentSpeedLevel - 1) * (CFG.speedIncrement || 0.12);
+}
+
+function canTakeHit() {
+  return performance.now() - lastHitTime >= (CFG.invincibilityMs || 1000);
+}
+
+function applyHit() {
+  lastHitTime = performance.now();
+  gameOver();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), 1 / 30);
+  const frameScale = dt * 60;
+
+  updateEffects(dt, frameScale);
+
+  if (!gameActive) {
+    updateCamera(dt);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  drone.position.x += (targetX - drone.position.x) * (CFG.droneLerpSpeed || 0.095) * frameScale;
+  drone.position.y += (targetY - drone.position.y) * (CFG.droneLerpSpeed || 0.095) * frameScale;
+  drone.position.y = Math.max(1, Math.min(18, drone.position.y));
+  drone.position.x = Math.max(-20, Math.min(20, drone.position.x));
+
+  drone.rotation.z = -(targetX - drone.position.x) * 0.12;
+  drone.rotation.x = (targetY - drone.position.y) * 0.04;
+
+  drone.traverse((object) => {
+    if (object.userData && object.userData.isProp) object.rotation.y += 1.8 * frameScale;
+  });
+
+  currentSpeed = Math.min(
+    (CFG.baseSpeed || 0.15) * calculateSpeedMultiplier(),
+    CFG.maxBaseGameSpeed || 2
+  );
+
+  speedLevelEl.textContent = String(currentSpeedLevel);
+
+  floorGrid.position.z += currentSpeed * frameScale;
+  if (floorGrid.position.z > 10) floorGrid.position.z = 0;
+
+  const positions = particles.geometry.attributes.position.array;
+
+  for (let i = 2; i < positions.length; i += 3) {
+    positions[i] += currentSpeed * 2 * frameScale;
+    if (positions[i] > 20) positions[i] = -150;
+  }
+
+  particles.geometry.attributes.position.needsUpdate = true;
+
+  for (let i = 0; i < treeData.length; i++) {
+    const tree = treeData[i];
+
+    tree.z += currentSpeed * frameScale;
+
+    const dx = drone.position.x - tree.x;
+    const dz = drone.position.z - tree.z;
+
+    if (Math.abs(dz) < 1 && Math.abs(dx) < 2.5 && drone.position.y < tree.radius * 3 && canTakeHit()) {
+      applyHit();
+    }
+
+    if (tree.z > (CFG.treeRecycleZ || 18)) {
+      resetTree(i, CFG.treeSpawnZ || -120);
+    } else {
+      updateTreeMatrix(i);
+    }
+  }
+
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const ring = rings[i];
+
+    ring.position.z += currentSpeed * frameScale;
+    ring.rotation.z += 0.03 * frameScale;
+    ring.rotation.y += 0.02 * frameScale;
+
+    const pulse = 1 + Math.sin(performance.now() * 0.005 + ring.userData.pulseSeed) * 0.08;
+    ring.scale.setScalar(pulse);
+
+    if (ring.position.distanceTo(drone.position) < 1.6 && ring.userData.active) {
+      ring.userData.active = false;
+      score += 10;
+      ringsCollected += 1;
+      document.getElementById('score').innerText = score;
+
+      createBurst(ring.position);
+      createScorePopup(ring.position, '+10');
+
+      scene.remove(ring);
+      rings.splice(i, 1);
+
+      if (ringsCollected % (CFG.ringsPerLevel || 20) === 0) {
+        currentSpeedLevel = Math.min((CFG.maxSpeedLevel || 8), currentSpeedLevel + 1);
+      }
+    } else if (ring.position.z > 20) {
+      scene.remove(ring);
+      rings.splice(i, 1);
+    }
+  }
+
+  updateCamera(dt);
+  renderer.render(scene, camera);
+}
+
+async function initHandTracking() {
+  loading.style.display = 'block';
+
+  try {
+    const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm');
+
+    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+        delegate: 'GPU'
+      },
+      runningMode: 'VIDEO',
+      numHands: 1
+    });
+
+    startWebcam();
+  } catch (error) {
+    console.error(error);
+    showError('MEDIAPIPE FAILED TO LOAD', 'Check your internet connection, refresh the page, and make sure CDN requests are not blocked.');
+  }
+}
+
+function startWebcam() {
+  const video = document.getElementById('webcam');
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showError('CAMERA NOT SUPPORTED', 'Try Chrome or Edge on a device with a webcam.');
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then((stream) => {
+      video.srcObject = stream;
+
+      video.addEventListener('loadeddata', () => {
+        loading.style.display = 'none';
+        gameActive = true;
+        clock.start();
+
+        if (!handLoopStarted) {
+          handLoopStarted = true;
+          predictWebcam();
+        }
+      }, { once: true });
+    })
+    .catch((error) => {
+      console.error(error);
+      showError('CAMERA ACCESS DENIED', 'Refresh the page and allow camera access.');
+    });
+}
+
+function stopCameraStream() {
+  const video = document.getElementById('webcam');
+  const stream = video && video.srcObject;
+
+  if (stream && stream.getTracks) {
+    stream.getTracks().forEach((track) => track.stop());
+    video.srcObject = null;
+  }
+}
+
+function applyDeadZone(value, deadZone) {
+  if (Math.abs(value) < deadZone) return 0;
+  return value > 0 ? value - deadZone : value + deadZone;
+}
+
+async function predictWebcam() {
+  const video = document.getElementById('webcam');
+
+  if (lastVideoTime !== video.currentTime && handLandmarker) {
+    lastVideoTime = video.currentTime;
+
+    const detection = handLandmarker.detectForVideo(video, performance.now());
+    const hasHand = !!(detection.landmarks && detection.landmarks.length);
+
+    setHandStatus(hasHand);
+
+    if (hasHand) {
+      const hand = detection.landmarks[0][9];
+
+      smoothedHandX = smoothedHandX * (1 - (CFG.handSmoothing || 0.12)) + hand.x * (CFG.handSmoothing || 0.12);
+      smoothedHandY = smoothedHandY * (1 - (CFG.handSmoothing || 0.12)) + hand.y * (CFG.handSmoothing || 0.12);
+
+      let rx = (0.5 - smoothedHandX) * 40;
+      let ry = (1 - smoothedHandY) * 16 + 1;
+
+      rx = applyDeadZone(rx, CFG.handDeadZoneX || 0.6);
+      ry = applyDeadZone(ry, CFG.handDeadZoneY || 0.4);
+
+      smoothedTargetX = smoothedTargetX * (1 - (CFG.targetLerpSpeed || 0.11)) + rx * (CFG.targetLerpSpeed || 0.11);
+      smoothedTargetY = smoothedTargetY * (1 - (CFG.targetLerpSpeed || 0.11)) + ry * (CFG.targetLerpSpeed || 0.11);
+
+      targetX = smoothedTargetX;
+      targetY = smoothedTargetY;
+    }
+  }
+
+  requestAnimationFrame(predictWebcam);
+}
+
+function gameOver() {
+  gameActive = false;
+  stopCameraStream();
+
+  shakeTime = 0.35;
+  shakeStrength = 0.8;
+
+  saveBestScore(score);
+
+  document.getElementById('final-score').innerText = score;
+  document.getElementById('game-over').style.display = 'block';
+}
+
+window.restartGame = function () {
+  score = 0;
+  ringsCollected = 0;
+  currentSpeedLevel = CFG.initialSpeedLevel || 1;
+  lastHitTime = -Infinity;
+
+  document.getElementById('score').innerText = '0';
+  document.getElementById('game-over').style.display = 'none';
+
+  rings.forEach((ring) => scene.remove(ring));
+  rings = [];
+
+  drone.position.set(0, 5, 0);
+  drone.rotation.set(0, 0, 0);
+
+  targetX = 0;
+  targetY = 5;
+  smoothedTargetX = 0;
+  smoothedTargetY = 5;
+
+  for (let i = 0; i < treeData.length; i++) {
+    resetTree(i, -30 - i * 12);
+  }
+
+  initHandTracking();
+};
+
+startButton.addEventListener('click', async () => {
+  startScreen.style.display = 'none';
+
+  if (gameMusic) {
+    gameMusic.volume = 0.45;
+
+    try {
+      gameMusic.currentTime = 0;
+      await gameMusic.play();
+    } catch (error) {
+      console.warn('Music could not start:', error);
+    }
+  }
+
+  initHandTracking();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopCameraStream();
+});
+
+addEventListener('beforeunload', stopCameraStream);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+hideSplashAfterDelay();
+initScene();
+animate();
 </script>
 </body>
 </html>
