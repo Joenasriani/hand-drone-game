@@ -4,14 +4,11 @@
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-hud: 'Rajdhani', system-ui, sans-serif;
   --bg-deep: #060817;
-  --panel: rgba(8, 14, 28, 0.72);
-  --panel-strong: rgba(8, 14, 28, 0.9);
   --panel-border: rgba(120, 220, 255, 0.24);
   --panel-border-hot: rgba(110, 231, 255, 0.44);
   --text-main: #e8faff;
   --text-muted: rgba(210, 235, 245, 0.68);
   --cyan: #6ee7ff;
-  --cyan-deep: #167a9a;
   --danger: #ff4d6d;
   --gold: #ffd166;
 }
@@ -22,7 +19,7 @@ html, body {
   color: var(--text-main);
 }
 
-/* Visual polish overlays. Kept light so the scene does not become too dark on phones. */
+/* ===== SECTION: SCENE POLISH ===== */
 body::before,
 body::after {
   content: '';
@@ -46,7 +43,7 @@ body::after {
     linear-gradient(115deg, rgba(110,231,255,0.035), transparent 38%, rgba(255,77,109,0.02));
 }
 
-/* Critical positioning fix: do not override absolute/fixed UI positioning. */
+/* ===== SECTION: STACKING ===== */
 canvas,
 #game-frame { z-index: 1; }
 #ui-layer { z-index: 20 !important; }
@@ -54,43 +51,8 @@ canvas,
 #sound-toggle { z-index: 24 !important; }
 .score-popup { z-index: 26 !important; }
 .modal { z-index: 40 !important; }
-#title-splash, .splash { z-index: 90 !important; }
 
-#title-splash,
-.splash {
-  background:
-    radial-gradient(circle at 50% 42%, rgba(110, 231, 255, 0.18), transparent 32%),
-    radial-gradient(circle at 74% 28%, rgba(255, 77, 109, 0.08), transparent 26%),
-    linear-gradient(135deg, #050711 0%, #081123 48%, #050711 100%) !important;
-}
-
-#title-splash h1,
-.title {
-  font-family: var(--font-display) !important;
-  font-weight: 700 !important;
-  letter-spacing: clamp(0.12em, 1.1vw, 0.2em) !important;
-  color: transparent !important;
-  background: linear-gradient(180deg, #f7fbff 0%, var(--cyan) 46%, var(--cyan-deep) 100%) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  text-shadow: 0 0 24px rgba(110, 231, 255, 0.22), 0 18px 80px rgba(0, 0, 0, 0.45) !important;
-  text-transform: uppercase;
-}
-
-.title::before {
-  color: rgba(110, 231, 255, 0.1) !important;
-  transform: translate3d(10px, 12px, -42px) !important;
-}
-
-#title-splash .subtitle,
-.sub {
-  font-family: var(--font-hud) !important;
-  color: var(--text-muted) !important;
-  text-shadow: 0 0 16px rgba(110, 231, 255, 0.24) !important;
-  letter-spacing: 0.24em !important;
-  font-weight: 600 !important;
-}
-
+/* ===== SECTION: HUD ===== */
 #ui-layer {
   font-family: var(--font-hud) !important;
   letter-spacing: 0.08em;
@@ -176,6 +138,7 @@ canvas,
   text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
 }
 
+/* ===== SECTION: MODALS ===== */
 .modal {
   font-family: var(--font-display) !important;
   background:
@@ -213,6 +176,7 @@ canvas,
   color: #ff9caf !important;
 }
 
+/* ===== SECTION: CONTROLS ===== */
 button,
 #sound-toggle {
   font-family: var(--font-display) !important;
@@ -235,6 +199,7 @@ button:hover,
     0 0 32px rgba(110, 231, 255, 0.26) !important;
 }
 
+/* ===== SECTION: HAND CAMERA ===== */
 #video-container {
   position: absolute !important;
   right: 14px !important;
@@ -267,6 +232,7 @@ button:hover,
   text-shadow: 0 0 18px rgba(255, 209, 102, 0.5) !important;
 }
 
+/* ===== SECTION: MOBILE ===== */
 @media (max-width: 640px) {
   body::before { opacity: 0.08; }
   body::after {
@@ -323,11 +289,6 @@ button:hover,
     font-size: 7px;
     left: 6px;
     top: 5px;
-  }
-
-  #title-splash h1,
-  .title {
-    letter-spacing: 0.09em !important;
   }
 
   .modal {
