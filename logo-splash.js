@@ -17,13 +17,15 @@
     const style = document.createElement('style');
     style.dataset.logoSplash = 'hand-drone-xs';
     style.textContent = `
-      body.hdx-logo-splash-active #start-screen{opacity:0!important;pointer-events:none!important}
+      #start-screen{display:none!important;opacity:0!important;pointer-events:none!important}
+      body.hdx-start-ready:not(.hdx-logo-splash-active) #start-screen.hdx-logo-start{display:flex!important;opacity:1!important;pointer-events:auto!important}
+      body.hdx-logo-splash-active #start-screen{display:none!important;opacity:0!important;pointer-events:none!important}
       #start-screen h2,#start-screen p,#start-screen .warning,.startup-guidance-card,.startup-guidance-title,.startup-guidance-grid,.startup-guidance-note{display:none!important}
       #hdx-logo-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:clamp(56px,11vw,150px);box-sizing:border-box;background:radial-gradient(circle at 50% 42%,rgba(14,165,233,.2),transparent 38%),radial-gradient(circle at 50% 58%,rgba(255,49,95,.1),transparent 42%),#03050d;opacity:1;transition:opacity ${FADE_MS}ms ease}
       #hdx-logo-splash.is-fading{opacity:0}
       .hdx-logo-splash-card{width:min(54vw,540px);max-width:calc(100vw - clamp(112px,22vw,300px));aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16));animation:hdxLogoEnter 800ms cubic-bezier(.2,.85,.22,1) forwards;opacity:0;transform:scale(.9)}
       .hdx-logo-splash-card img,.hdx-intro-logo img{width:100%;height:100%;object-fit:contain;display:block}
-      #start-screen.hdx-logo-start{width:min(520px,calc(100vw - 32px))!important;min-height:auto!important;padding:clamp(22px,4vw,36px)!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:12px!important}
+      #start-screen.hdx-logo-start{width:min(520px,calc(100vw - 32px))!important;min-height:auto!important;padding:clamp(22px,4vw,36px)!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:12px!important}
       .hdx-intro-logo{width:min(360px,74vw);aspect-ratio:1/1;margin:0 auto 4px;display:grid;place-items:center;filter:drop-shadow(0 0 20px rgba(110,231,255,.3))}
       #start-screen.hdx-logo-start #start-button{margin-top:0!important}
       @keyframes hdxLogoEnter{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
@@ -64,7 +66,7 @@
     const splash = document.getElementById('hdx-logo-splash');
     if (splash) splash.remove();
     cleanupOldIntro();
-    document.body.classList.remove('hdx-logo-splash-active', 'hand-drone-starting');
+    document.body.classList.remove('hdx-logo-splash-active', 'hand-drone-starting', 'hdx-start-ready');
   }
 
   function replaceOldStartMenu(src) {
@@ -112,6 +114,7 @@
         if (splash.parentNode) splash.remove();
         document.body.classList.remove('hdx-logo-splash-active');
         replaceOldStartMenu(logoSrc);
+        document.body.classList.add('hdx-start-ready');
       }, FADE_MS + 80);
     }, SPLASH_SHOW_MS);
 
