@@ -6,8 +6,9 @@
   'use strict';
 
   const LOGO_PATHS = ['./logo.png', 'logo.png', '/hand-drone-game/logo.png'];
-  const SPLASH_SHOW_MS = 2000;
-  const FADE_MS = 420;
+  // Total logo splash time is kept under 2 seconds including fade.
+  const SPLASH_SHOW_MS = 1550;
+  const FADE_MS = 300;
 
   if (window.__HAND_DRONE_LOGO_SPLASH__) return;
   window.__HAND_DRONE_LOGO_SPLASH__ = true;
@@ -23,7 +24,7 @@
       #start-screen h2,#start-screen p,#start-screen .warning,.startup-guidance-card,.startup-guidance-title,.startup-guidance-grid,.startup-guidance-note{display:none!important}
       #hdx-logo-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:clamp(44px,9vw,128px);box-sizing:border-box;background:radial-gradient(circle at 50% 42%,rgba(14,165,233,.2),transparent 38%),radial-gradient(circle at 50% 58%,rgba(255,49,95,.1),transparent 42%),#03050d;opacity:1;transition:opacity ${FADE_MS}ms ease;overflow:hidden}
       #hdx-logo-splash.is-fading{opacity:0}
-      .hdx-logo-splash-card{width:min(48vw,460px);max-width:calc(100vw - 88px);max-height:calc(100vh - 88px);aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16));animation:hdxLogoEnter 800ms cubic-bezier(.2,.85,.22,1) forwards;opacity:0;transform:scale(.9)}
+      .hdx-logo-splash-card{width:min(48vw,460px);max-width:calc(100vw - 88px);max-height:calc(100vh - 88px);aspect-ratio:1/1;display:grid;place-items:center;filter:drop-shadow(0 0 30px rgba(110,231,255,.34)) drop-shadow(0 0 58px rgba(255,49,95,.16));animation:hdxLogoEnter 500ms cubic-bezier(.2,.85,.22,1) forwards;opacity:0;transform:scale(.9)}
       .hdx-logo-splash-card img,.hdx-intro-logo img{width:100%;height:100%;object-fit:contain;display:block}
       #start-screen.hdx-logo-start{width:min(500px,calc(100vw - 32px))!important;height:auto!important;min-height:0!important;max-height:calc(100vh - 32px)!important;padding:clamp(14px,2.4vw,24px)!important;box-sizing:border-box!important;overflow:hidden!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:clamp(8px,1.4vh,14px)!important}
       .hdx-intro-logo{width:min(300px,58vw,52vh);max-width:100%;aspect-ratio:1/1;margin:0 auto;display:grid;place-items:center;filter:drop-shadow(0 0 20px rgba(110,231,255,.3));flex:0 1 auto;min-height:0}
@@ -116,7 +117,7 @@
         document.body.classList.remove('hdx-logo-splash-active');
         replaceOldStartMenu(logoSrc);
         document.body.classList.add('hdx-start-ready');
-      }, FADE_MS + 80);
+      }, FADE_MS + 50);
     }, SPLASH_SHOW_MS);
 
     const observer = new MutationObserver(() => {
