@@ -5,44 +5,47 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Hand Drone XS</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#060817;font-family:Segoe UI,Arial,sans-serif}#game-frame{position:fixed;inset:0;width:100%;height:100%;border:0;background:#060817}.audio-controls{position:fixed;top:16px;right:16px;z-index:90;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:min(360px,calc(100vw - 24px))}.audio-controls button,#sound-toggle,#music-toggle{border:1px solid rgba(0,210,255,.75);border-radius:999px;padding:12px 16px;color:#00d2ff;background:rgba(6,8,23,.84);box-shadow:0 0 24px rgba(0,210,255,.25);font:900 12px Courier New,monospace;text-transform:uppercase;cursor:pointer}.audio-controls button.is-on,#sound-toggle.is-on,#music-toggle.is-on{color:#00ffd5;border-color:#00ffd5}.music-volume{width:92px;accent-color:#00ffd5;cursor:pointer}.splash{position:fixed;inset:0;z-index:50;display:grid;place-items:center;pointer-events:none;perspective:1100px;background:radial-gradient(circle at 50% 45%,rgba(0,210,255,.2),transparent 35%),linear-gradient(135deg,#060817,#160927);animation:fade .8s ease-in-out 3.2s forwards}.title{position:relative;font:950 clamp(48px,11vw,160px)/.9 Impact,Arial Black,sans-serif;letter-spacing:clamp(4px,.9vw,18px);color:#00d2ff;text-align:center;text-transform:uppercase;text-shadow:0 1px 0 #0099c7,0 2px 0 #0088b4,0 3px 0 #0073a0,0 8px 18px rgba(0,210,255,.8),0 0 70px rgba(255,71,87,.5);animation:float 2.5s ease-in-out infinite alternate}.title:before{content:attr(data-text);position:absolute;color:rgba(255,71,87,.75);transform:translate3d(12px,12px,-42px);z-index:-1}.sub{margin-top:20px;font:800 clamp(13px,2vw,24px) Courier New,monospace;letter-spacing:6px;color:#ff6b81;text-align:center;text-shadow:0 0 20px #ff4757}.grid{position:absolute;width:min(900px,90vw);height:240px;bottom:7vh;left:50%;transform:translateX(-50%) rotateX(72deg);background-image:linear-gradient(rgba(0,210,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(255,71,87,.18) 1px,transparent 1px);background-size:46px 46px;animation:grid 1.1s linear infinite;opacity:.6}.stars{position:absolute;inset:0;background-image:radial-gradient(circle,#fff 0 1px,transparent 1.4px),radial-gradient(circle,#00d2ff 0 1px,transparent 1.2px);background-size:90px 90px,150px 150px;opacity:.45;animation:stars 3.5s linear forwards}@keyframes fade{to{opacity:0;visibility:hidden;transform:scale(1.04)}}@keyframes float{from{transform:rotateX(15deg) rotateY(-18deg) translateZ(80px)}to{transform:rotateX(12deg) rotateY(16deg) translateZ(96px)}}@keyframes grid{to{background-position:0 46px,46px 0}}@keyframes stars{to{background-position:0 220px,30px 300px}}@media(max-width:640px){.audio-controls{top:10px;right:10px;gap:5px}.audio-controls button,#sound-toggle,#music-toggle{padding:8px 9px;font-size:9px}.music-volume{width:70px}.sub{letter-spacing:4px}.grid{height:170px}}
+/* ===== SECTION: BASE LAYOUT ===== */
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#060817;font-family:Segoe UI,Arial,sans-serif}
+#game-frame{position:fixed;inset:0;width:100%;height:100%;border:0;background:#060817}
+
+/* ===== SECTION: AUDIO CONTROLS ===== */
+.audio-controls{position:fixed;top:16px;right:16px;z-index:90;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:min(360px,calc(100vw - 24px))}
+.audio-controls button,#sound-toggle,#music-toggle{border:1px solid rgba(0,210,255,.75);border-radius:999px;padding:12px 16px;color:#00d2ff;background:rgba(6,8,23,.84);box-shadow:0 0 24px rgba(0,210,255,.25);font:900 12px Courier New,monospace;text-transform:uppercase;cursor:pointer}
+.audio-controls button.is-on,#sound-toggle.is-on,#music-toggle.is-on{color:#00ffd5;border-color:#00ffd5}
+.music-volume{width:92px;accent-color:#00ffd5;cursor:pointer}
+
+@media(max-width:640px){.audio-controls{top:10px;right:10px;gap:5px}.audio-controls button,#sound-toggle,#music-toggle{padding:8px 9px;font-size:9px}.music-volume{width:70px}}
 </style>
-<script src="config.js"></script>
+
 <script>
-window.GAME_CONFIG=Object.assign({},window.GAME_CONFIG||{},{handDeadZoneX:.35,handDeadZoneY:.18,handSmoothing:.24,droneLerpSpeed:.22,targetLerpSpeed:.24,baseSpeed:.38,maxSpeedLevel:14,speedIncrement:.16,maxBaseGameSpeed:4.2,ringSpawnChance:.88});
+// ===== SECTION: CONFIG OVERRIDES =====
+// Must run before config.js so shared bootstrap scripts see the iframe tuning values.
+window.GAME_CONFIG=Object.assign({},window.GAME_CONFIG||{},{
+  handDeadZoneX:.35,
+  handDeadZoneY:.18,
+  handSmoothing:.24,
+  droneLerpSpeed:.22,
+  targetLerpSpeed:.24,
+  baseSpeed:.38,
+  maxSpeedLevel:14,
+  speedIncrement:.16,
+  maxBaseGameSpeed:4.2,
+  ringSpawnChance:.88
+});
 </script>
+<script src="config.js"></script>
 </head>
 <body>
-<iframe id="game-frame" src="index.html" allow="camera; fullscreen" title="Hand Drone XS game"></iframe>
+<!-- ===== SECTION: GAME HOST ===== -->
+<iframe id="game-frame" src="index.html" allow="camera; fullscreen; autoplay" title="Hand Drone XS game"></iframe>
+
+<!-- ===== SECTION: AUDIO CONTROLS ===== -->
+<!-- Audio behavior is centralized in audio-sfx.js and audio-start-unlock.js via config.js. -->
 <div class="audio-controls" aria-label="Audio controls">
   <button id="sound-toggle" type="button" aria-pressed="false">Enable SFX</button>
-  <button id="music-toggle" type="button" aria-pressed="false">Music Off</button>
-  <input id="music-volume" class="music-volume" type="range" min="0" max="1" step="0.05" value="0.38" aria-label="Music volume" />
+  <button id="music-toggle" type="button" aria-pressed="false">Music On</button>
+  <input id="music-volume" class="music-volume" type="range" min="0" max="1" step="0.05" value="0.45" aria-label="Music volume" />
 </div>
-<div class="splash" aria-hidden="true"><div class="stars"></div><div class="grid"></div><div><div class="title" data-text="HAND DRONE XS">HAND DRONE XS</div><div class="sub">SIMULATED 3D PILOT BOOT</div></div></div>
-<script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
-<script>
-const frame=document.getElementById('game-frame'),soundToggle=document.getElementById('sound-toggle'),musicToggle=document.getElementById('music-toggle'),musicVolume=document.getElementById('music-volume');
-let soundEnabled=false,musicEnabled=false,soundsReady=false,musicReady=false,gameStarted=false,previousScore=0,previousGameOverVisible=false,previousHandLocked=false,lastHandSoundAt=0,hookIntervalId=null;const sounds={},music={};
-function clampSample(v){return Math.max(-1,Math.min(1,v));}
-function encodeWav(samples,sampleRate){const buffer=new ArrayBuffer(44+samples.length*2),view=new DataView(buffer),ws=(o,s)=>{for(let i=0;i<s.length;i++)view.setUint8(o+i,s.charCodeAt(i));};ws(0,'RIFF');view.setUint32(4,36+samples.length*2,true);ws(8,'WAVE');ws(12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);ws(36,'data');view.setUint32(40,samples.length*2,true);let offset=44;for(let i=0;i<samples.length;i++,offset+=2)view.setInt16(offset,clampSample(samples[i])*0x7fff,true);let binary='';const bytes=new Uint8Array(buffer);for(let i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);return 'data:audio/wav;base64,'+btoa(binary);}
-function makeTone({duration=.2,start=440,end=440,volume=.8,type='sine',noise=0}){const sampleRate=22050,length=Math.max(1,Math.floor(duration*sampleRate)),samples=new Float32Array(length);for(let i=0;i<length;i++){const t=i/sampleRate,p=i/length,f=start+(end-start)*p,phase=2*Math.PI*f*t;let wave=Math.sin(phase);if(type==='square')wave=Math.sign(wave||1);if(type==='saw')wave=2*((f*t)%1)-1;if(type==='triangle')wave=2*Math.abs(2*((f*t)%1)-1)-1;const env=Math.min(p/.04,1)*Math.pow(1-p,1.2);samples[i]=((wave*(1-noise))+((Math.random()*2-1)*noise))*env*volume;}return encodeWav(samples,sampleRate);}
-function makeLayeredTone({duration=.5,layers=[],noise=0,volume=.75}){const sampleRate=22050,length=Math.max(1,Math.floor(duration*sampleRate)),samples=new Float32Array(length);for(let i=0;i<length;i++){const t=i/sampleRate,p=i/length;let sum=0;for(const layer of layers){const start=layer.start??440,end=layer.end??start,f=start+(end-start)*p,phase=2*Math.PI*f*t;let wave=Math.sin(phase);if(layer.type==='triangle')wave=2*Math.abs(2*((f*t)%1)-1)-1;if(layer.type==='saw')wave=2*((f*t)%1)-1;if(layer.type==='square')wave=Math.sign(wave||1);sum+=wave*(layer.gain??1);}const attack=Math.min(p/(layers[0]?.attack??.04),1),release=Math.pow(1-p,layers[0]?.release??1.65),env=attack*release;const airy=(Math.random()*2-1)*noise;samples[i]=(sum/Math.max(layers.length,1)+airy)*env*volume;}return encodeWav(samples,sampleRate);}
-function makeProceduralMusic({duration=7.2,bpm=86,root=55,mode='minor',volume=.32,energy=.45}){const sampleRate=22050,length=Math.max(1,Math.floor(duration*sampleRate)),samples=new Float32Array(length),minor=[0,3,7,10],major=[0,4,7,11],scale=mode==='major'?major:minor,beat=60/bpm;for(let i=0;i<length;i++){const t=i/sampleRate,p=(t%duration)/duration,bar=Math.floor(t/(beat*4)),step=Math.floor((t% (beat*4))/beat),degree=scale[(bar+step)%scale.length],bass=root*Math.pow(2,degree/12),pad1=bass*4,pad2=bass*6.01,pulseFreq=bass*8;let env=.5+.5*Math.sin(2*Math.PI*p);let pad=(Math.sin(2*Math.PI*pad1*t)*.35+Math.sin(2*Math.PI*pad2*t)*.18)*(.35+.15*env);let bassWave=Math.sin(2*Math.PI*bass*t)*(.24+.08*Math.sin(2*Math.PI*t/beat));let pulse=Math.sin(2*Math.PI*pulseFreq*t)*(step%2===0?.08:.04)*energy;let shimmer=(Math.random()*2-1)*.012*energy;let sidechain=.82+.18*Math.sin(2*Math.PI*t/beat);samples[i]=(pad+bassWave+pulse+shimmer)*sidechain*volume;}const fade=Math.min(Math.floor(sampleRate*.22),Math.floor(length/4));for(let i=0;i<fade;i++){const a=i/fade;samples[i]*=a;samples[length-1-i]*=a;}return encodeWav(samples,sampleRate);}
-function buildSounds(){if(soundsReady||!window.Howl)return;Howler.volume(.82);sounds.boot=new Howl({src:[makeLayeredTone({duration:.82,volume:.58,noise:.012,layers:[{start:74,end:164,type:'sine',gain:.9},{start:312,end:520,type:'triangle',gain:.28},{start:940,end:1320,type:'sine',gain:.12}]})],volume:.72});sounds.start=new Howl({src:[makeLayeredTone({duration:.38,volume:.52,noise:.01,layers:[{start:118,end:168,type:'sine',gain:.75},{start:480,end:760,type:'triangle',gain:.32},{start:980,end:1180,type:'sine',gain:.12}]})],volume:.7});sounds.lock=new Howl({src:[makeLayeredTone({duration:.24,volume:.46,noise:.002,layers:[{start:760,end:760,type:'sine',gain:.45},{start:1140,end:1020,type:'sine',gain:.28},{start:1520,end:1280,type:'sine',gain:.14}]})],volume:.58});sounds.collect=new Howl({src:[makeLayeredTone({duration:.34,volume:.62,noise:.004,layers:[{start:740,end:1240,type:'sine',gain:.45},{start:1110,end:1660,type:'triangle',gain:.28},{start:1860,end:2240,type:'sine',gain:.12}]})],volume:.7});sounds.crash=new Howl({src:[makeLayeredTone({duration:.62,volume:.64,noise:.11,layers:[{start:170,end:58,type:'saw',gain:.65},{start:86,end:42,type:'sine',gain:.8},{start:520,end:210,type:'triangle',gain:.18}]})],volume:.74});soundsReady=true;}
-function buildMusic(){if(musicReady||!window.Howl)return;const vol=Number(musicVolume.value||.38);music.menu=new Howl({src:[makeProceduralMusic({duration:8.4,bpm:72,root:49,mode:'minor',volume:.28,energy:.32})],loop:true,volume:vol*.7});music.gameplay=new Howl({src:[makeProceduralMusic({duration:6.4,bpm:96,root:55,mode:'minor',volume:.3,energy:.58})],loop:true,volume:vol});music.victory=new Howl({src:[makeLayeredTone({duration:1.15,volume:.55,noise:.004,layers:[{start:392,end:660,type:'sine',gain:.35},{start:494,end:880,type:'triangle',gain:.28},{start:784,end:1320,type:'sine',gain:.12}]})],volume:vol*.9});music.failure=new Howl({src:[makeLayeredTone({duration:1.35,volume:.5,noise:.035,layers:[{start:174,end:82,type:'sine',gain:.65},{start:349,end:196,type:'triangle',gain:.18},{start:58,end:48,type:'sine',gain:.5}]})],volume:vol*.9});musicReady=true;}
-function stopMusicLoops(){if(!musicReady)return;music.menu.stop();music.gameplay.stop();}
-function playMusicState(state){if(!musicEnabled)return;buildMusic();if(state==='gameplay'){if(music.menu.playing())music.menu.fade(music.menu.volume(),0,450);setTimeout(()=>music.menu.stop(),480);if(!music.gameplay.playing())music.gameplay.play();}else{if(music.gameplay.playing())music.gameplay.stop();if(!music.menu.playing())music.menu.play();}}
-function setMusicVolume(v){if(!musicReady)return;music.menu.volume(v*.7);music.gameplay.volume(v);music.victory.volume(v*.9);music.failure.volume(v*.9);}
-function setMusicEnabled(on){buildMusic();musicEnabled=on;musicToggle.classList.toggle('is-on',on);musicToggle.setAttribute('aria-pressed',String(on));musicToggle.textContent=on?'Music On':'Music Off';if(on)playMusicState(gameStarted?'gameplay':'menu');else stopMusicLoops();}
-function setSoundEnabled(on){buildSounds();soundEnabled=on;soundToggle.classList.toggle('is-on',on);soundToggle.setAttribute('aria-pressed',String(on));soundToggle.textContent=on?'SFX On':'Enable SFX';}
-function playSound(n){if(!soundEnabled)return;buildSounds();sounds[n]?.play();}
-function enableAudio(){const wasSfx=soundEnabled,wasMusic=musicEnabled;if(!wasSfx)setSoundEnabled(true);if(!wasMusic)setMusicEnabled(true);if(!wasSfx)playSound('boot');}
-soundToggle.addEventListener('click',()=>{const next=!soundEnabled;setSoundEnabled(next);if(next)playSound('boot');});
-musicToggle.addEventListener('click',()=>setMusicEnabled(!musicEnabled));
-musicVolume.addEventListener('input',()=>setMusicVolume(Number(musicVolume.value||.38)));
-function normalizeMissionCopy(doc){const modal=doc.getElementById('game-over');if(!modal)return;const h=modal.querySelector('h1'),b=modal.querySelector('button');if(h)h.textContent='MISSION FAILED';if(b)b.textContent='REBOOT MISSION';}
-function hookGameEvents(){const doc=frame.contentDocument||frame.contentWindow?.document;if(!doc)return;const start=doc.getElementById('start-button'),scoreEl=doc.getElementById('score'),over=doc.getElementById('game-over'),hand=doc.getElementById('hand-status');if(hookIntervalId)clearInterval(hookIntervalId);normalizeMissionCopy(doc);if(start)start.addEventListener('click',()=>{gameStarted=true;enableAudio();playSound('start');playMusicState('gameplay');});hookIntervalId=setInterval(()=>{normalizeMissionCopy(doc);const score=Number(scoreEl?.textContent||0);if(score>previousScore){playSound('collect');if(musicEnabled&&musicReady&&score%100===0)music.victory.play();}previousScore=score;const overVisible=over&&getComputedStyle(over).display!=='none';if(overVisible&&!previousGameOverVisible){playSound('crash');if(musicEnabled&&musicReady){stopMusicLoops();music.failure.play();setTimeout(()=>playMusicState('menu'),1100);}}previousGameOverVisible=Boolean(overVisible);const locked=Boolean(hand?.classList.contains('locked')),now=performance.now();if(locked&&!previousHandLocked&&now-lastHandSoundAt>900){playSound('lock');lastHandSoundAt=now;}previousHandLocked=locked;},100);}frame.addEventListener('load',hookGameEvents);
-</script>
 </body>
 </html>
