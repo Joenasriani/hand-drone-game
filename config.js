@@ -1,8 +1,10 @@
 // config.js
-// Shared tunable constants for index.html and play.html.
-// This removes the old play.html string-replace patching path.
+// Shared tunable constants and lightweight bootstrap for index.html/play.html.
 
 (function () {
+  'use strict';
+
+  // ===== SECTION: CONFIG CONSTANTS =====
   const defaults = {
     // Hand tracking
     handSmoothing: 0.12,
@@ -32,17 +34,42 @@
     invincibilityMs: 1000,
 
     // Assets
-    droneModelPath: "/models/drone.glb"
+    droneModelPath: '/models/drone.glb',
+
+    // Debug
+    debugAudio: false
   };
 
   window.GAME_CONFIG = Object.assign({}, defaults, window.GAME_CONFIG || {});
 
-  // Remove the full-screen title splash page immediately.
-  // The game should open straight to the start guidance/camera control screen.
-  const injectRemoveTitleSplash = () => {
-    if (document.querySelector('style[data-remove-title-splash="hand-drone-xs"]')) return;
+  // ===== SECTION: HELPERS =====
+  const IS_TOP_WINDOW = (() => {
+    try { return window.parent === window; } catch (_) { return true; }
+  })();
+
+  const loadScriptOnce = (src, marker) => {
+    if (document.querySelector(`script[data-${marker}="hand-drone-xs"]`)) return;
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = true;
+    script.dataset[marker.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = 'hand-drone-xs';
+    document.head.appendChild(script);
+  };
+
+  const loadStyleOnce = (href, marker) => {
+    if (document.querySelector(`link[data-${marker}="hand-drone-xs"]`)) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.dataset[marker.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = 'hand-drone-xs';
+    document.head.appendChild(link);
+  };
+
+  // ===== SECTION: BASE VISUAL BOOTSTRAP =====
+  const injectBaseVisualGuards = () => {
+    if (document.querySelector('style[data-base-visual-guards="hand-drone-xs"]')) return;
     const style = document.createElement('style');
-    style.dataset.removeTitleSplash = 'hand-drone-xs';
+    style.dataset.baseVisualGuards = 'hand-drone-xs';
     style.textContent = `
       #title-splash,
       .splash {
@@ -51,99 +78,79 @@
         opacity: 0 !important;
         pointer-events: none !important;
       }
+
+      body.hand-drone-starting #loading {
+        display: none !important;
+      }
     `;
     document.head.appendChild(style);
   };
 
-  injectRemoveTitleSplash();
-
-  // Premium cockpit visual identity pass.
-  // Loaded through config.js so both index.html and play.html receive the same theme
-  // without touching gameplay, MediaPipe, movement, collision, or renderer logic.
-  const injectPremiumTheme = () => {
-    if (document.querySelector('link[data-premium-theme="hand-drone-xs"]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'premium.css';
-    link.dataset.premiumTheme = 'hand-drone-xs';
-    document.head.appendChild(link);
-  };
-
-  const injectProceduralSfx = () => {
-    if (document.querySelector('script[data-procedural-sfx="hand-drone-xs"]')) return;
-    const script = document.createElement('script');
-    script.src = 'audio-sfx.js';
-    script.defer = true;
-    script.dataset.proceduralSfx = 'hand-drone-xs';
-    document.head.appendChild(script);
-  };
-
-  const injectStartAudioUnlock = () => {
-    if (document.querySelector('script[data-start-audio-unlock="hand-drone-xs"]')) return;
-    const script = document.createElement('script');
-    script.src = 'audio-start-unlock.js';
-    script.defer = true;
-    script.dataset.startAudioUnlock = 'hand-drone-xs';
-    document.head.appendChild(script);
-  };
-
-  // Startup guidance + real visible loading progress.
-  // UX-only layer. Does not change gameplay, tracking math, camera access, movement,
-  // collision, renderer, or controls.
-  const injectStartupGuidanceAndLoading = () => {
-    if (document.querySelector('style[data-startup-guidance="hand-drone-xs"]')) return;
+  // ===== SECTION: SINGLE START CARD =====
+  const injectSingleStartScreen = () => {
+    if (document.querySelector('style[data-single-start-screen="hand-drone-xs"]')) return;
 
     const style = document.createElement('style');
-    style.dataset.startupGuidance = 'hand-drone-xs';
+    style.dataset.singleStartScreen = 'hand-drone-xs';
     style.textContent = `
       #start-screen {
-        width: min(540px, calc(100vw - 28px)) !important;
+        width: min(520px, calc(100vw - 28px)) !important;
+        max-height: min(86vh, 620px) !important;
+        overflow: auto !important;
+      }
+
+      #start-screen h2 {
+        margin-bottom: 8px !important;
+      }
+
+      #start-screen > p {
+        display: none !important;
       }
 
       .startup-guidance-card {
-        margin: 18px auto 6px;
-        padding: 16px;
-        border-radius: 18px;
-        background: linear-gradient(180deg, rgba(12,24,42,.72), rgba(4,8,18,.58));
-        border: 1px solid rgba(110,231,255,.24);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 44px rgba(0,0,0,.22);
+        margin: 14px auto 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
         text-align: left;
       }
 
       .startup-guidance-title {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 10px;
         margin-bottom: 12px;
         font: 800 13px Rajdhani, system-ui, sans-serif;
-        letter-spacing: .16em;
+        letter-spacing: .14em;
         color: #e8faff;
         text-transform: uppercase;
+        text-align: center;
       }
 
       .startup-guidance-palm {
-        width: 42px;
-        height: 42px;
-        flex: 0 0 42px;
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
         display: grid;
         place-items: center;
-        border-radius: 14px;
+        border-radius: 13px;
         background: radial-gradient(circle at 50% 28%, rgba(110,231,255,.32), rgba(110,231,255,.08) 62%, transparent 100%);
         border: 1px solid rgba(110,231,255,.28);
         color: #6ee7ff;
-        font-size: 25px;
-        box-shadow: 0 0 22px rgba(110,231,255,.14);
+        font-size: 23px;
       }
 
       .startup-guidance-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
+        gap: 8px;
       }
 
       .startup-guidance-step {
-        min-height: 104px;
-        padding: 12px 10px;
+        min-height: 88px;
+        padding: 11px 9px;
         border-radius: 14px;
         background: rgba(255,255,255,.045);
         border: 1px solid rgba(255,255,255,.08);
@@ -152,26 +159,30 @@
       .startup-guidance-step strong {
         display: block;
         margin-bottom: 6px;
-        font: 800 12px Rajdhani, system-ui, sans-serif;
-        letter-spacing: .12em;
+        font: 800 11px Rajdhani, system-ui, sans-serif;
+        letter-spacing: .1em;
         color: #6ee7ff;
         text-transform: uppercase;
       }
 
       .startup-guidance-step span {
         display: block;
-        font: 600 12px Space Grotesk, system-ui, sans-serif;
+        font: 600 11px Space Grotesk, system-ui, sans-serif;
         line-height: 1.35;
         color: rgba(232,250,255,.76);
       }
 
       .startup-guidance-note {
-        margin-top: 12px;
-        font: 700 11px Rajdhani, system-ui, sans-serif;
-        letter-spacing: .1em;
+        margin-top: 11px;
+        font: 700 10px Rajdhani, system-ui, sans-serif;
+        letter-spacing: .09em;
         color: rgba(255,209,102,.86);
         text-transform: uppercase;
         text-align: center;
+      }
+
+      #start-button {
+        margin-top: 16px !important;
       }
 
       #loading .loading-progress-wrap {
@@ -186,7 +197,6 @@
         border-radius: 999px;
         background: rgba(110,231,255,.12);
         border: 1px solid rgba(110,231,255,.26);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 22px rgba(110,231,255,.1);
       }
 
       #loading .loading-progress-fill {
@@ -194,7 +204,6 @@
         height: 100%;
         border-radius: inherit;
         background: linear-gradient(90deg, rgba(110,231,255,.4), rgba(255,209,102,.88), rgba(110,231,255,.75));
-        box-shadow: 0 0 18px rgba(110,231,255,.45);
         transition: width 280ms ease;
       }
 
@@ -239,12 +248,11 @@
       }
 
       @media (max-width: 640px) {
-        #start-screen { width: min(430px, calc(100vw - 24px)) !important; }
-        .startup-guidance-card { padding: 13px; margin-top: 14px; }
-        .startup-guidance-grid { grid-template-columns: 1fr; gap: 8px; }
-        .startup-guidance-step { min-height: auto; padding: 10px; }
-        .startup-guidance-title { font-size: 12px; margin-bottom: 10px; }
-        .startup-guidance-palm { width: 36px; height: 36px; font-size: 21px; border-radius: 12px; }
+        #start-screen { width: min(420px, calc(100vw - 24px)) !important; }
+        .startup-guidance-grid { grid-template-columns: 1fr; gap: 7px; }
+        .startup-guidance-step { min-height: auto; padding: 9px; }
+        .startup-guidance-title { font-size: 12px; margin-bottom: 9px; }
+        .startup-guidance-palm { width: 34px; height: 34px; font-size: 20px; border-radius: 11px; }
       }
     `;
     document.head.appendChild(style);
@@ -253,33 +261,31 @@
       const start = document.getElementById('start-screen');
       if (!start || start.querySelector('.startup-guidance-card')) return;
 
+      document.body.classList.add('hand-drone-starting');
       const button = start.querySelector('#start-button');
       const card = document.createElement('div');
       card.className = 'startup-guidance-card';
       card.innerHTML = `
         <div class="startup-guidance-title">
           <div class="startup-guidance-palm" aria-hidden="true">✋</div>
-          <div>How to pilot with your palm</div>
+          <div>Play with your palm</div>
         </div>
         <div class="startup-guidance-grid">
-          <div class="startup-guidance-step">
-            <strong>1. Show palm</strong>
-            <span>Place your open palm in front of the device camera.</span>
-          </div>
-          <div class="startup-guidance-step">
-            <strong>2. Move hand</strong>
-            <span>Move your hand left, right, up, and down to guide the drone.</span>
-          </div>
-          <div class="startup-guidance-step">
-            <strong>3. Collect rings</strong>
-            <span>Fly through gold rings and avoid trees or obstacles.</span>
-          </div>
+          <div class="startup-guidance-step"><strong>Show palm</strong><span>Place your open palm in front of the camera.</span></div>
+          <div class="startup-guidance-step"><strong>Guide drone</strong><span>Move hand left, right, up, and down to fly.</span></div>
+          <div class="startup-guidance-step"><strong>Collect rings</strong><span>Fly through gold rings and avoid obstacles.</span></div>
         </div>
         <div class="startup-guidance-note">Good light and a clear palm improve tracking.</div>
       `;
 
       if (button) start.insertBefore(card, button);
       else start.appendChild(card);
+
+      if (button) {
+        button.addEventListener('click', () => {
+          document.body.classList.remove('hand-drone-starting');
+        }, { once: true, capture: true });
+      }
     };
 
     const enhanceLoading = () => {
@@ -289,13 +295,8 @@
       const wrap = document.createElement('div');
       wrap.className = 'loading-progress-wrap';
       wrap.innerHTML = `
-        <div class="loading-progress-track" aria-label="Loading progress">
-          <div class="loading-progress-fill"></div>
-        </div>
-        <div class="loading-progress-meta">
-          <span class="loading-progress-label">Preparing flight systems</span>
-          <span class="loading-progress-percent">8%</span>
-        </div>
+        <div class="loading-progress-track" aria-label="Loading progress"><div class="loading-progress-fill"></div></div>
+        <div class="loading-progress-meta"><span class="loading-progress-label">Preparing flight systems</span><span class="loading-progress-percent">8%</span></div>
         <div class="loading-progress-status">Loading hand tracking model...</div>
         <div class="loading-progress-hint">Camera permission may appear next</div>
       `;
@@ -308,10 +309,9 @@
       const hint = wrap.querySelector('.loading-progress-hint');
       const steps = [
         { p: 8, label: 'Preparing flight systems', status: 'Loading hand tracking model...', hint: 'Camera permission may appear next' },
-        { p: 22, label: 'Loading MediaPipe', status: 'Downloading vision runtime and hand model...', hint: 'This can take longer on mobile networks' },
-        { p: 44, label: 'Preparing camera', status: 'Waiting for browser camera permission...', hint: 'Tap Allow if your browser asks' },
-        { p: 68, label: 'Starting webcam', status: 'Connecting video stream to hand tracker...', hint: 'Keep your palm visible in the camera' },
-        { p: 84, label: 'Calibrating hand lock', status: 'Almost ready. Show your hand clearly.', hint: 'Good light improves tracking' },
+        { p: 28, label: 'Loading MediaPipe', status: 'Downloading vision runtime and hand model...', hint: 'This can take longer on mobile networks' },
+        { p: 52, label: 'Preparing camera', status: 'Waiting for browser camera permission...', hint: 'Tap Allow if your browser asks' },
+        { p: 76, label: 'Starting webcam', status: 'Connecting video stream to hand tracker...', hint: 'Keep your palm visible in the camera' },
         { p: 94, label: 'Final checks', status: 'Finishing cockpit startup...', hint: 'If this takes long, check camera permission' }
       ];
       let i = 0;
@@ -327,12 +327,8 @@
 
       setStep(steps[0]);
 
-      const timer = window.setInterval(() => {
-        if (!document.body.contains(loading)) {
-          window.clearInterval(timer);
-          return;
-        }
-
+      window.setInterval(() => {
+        if (!document.body.contains(loading)) return;
         const isVisible = window.getComputedStyle(loading).display !== 'none';
         if (!isVisible) {
           visibleTicks = 0;
@@ -340,7 +336,6 @@
           setStep(steps[0]);
           return;
         }
-
         visibleTicks += 1;
         if (i < steps.length - 1) {
           i += 1;
@@ -360,24 +355,19 @@
       enhanceLoading();
     };
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', enhance, { once: true });
-    } else {
-      enhance();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enhance, { once: true });
+    else enhance();
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      injectPremiumTheme();
-      injectProceduralSfx();
-      injectStartAudioUnlock();
-      injectStartupGuidanceAndLoading();
-    }, { once: true });
-  } else {
-    injectPremiumTheme();
-    injectProceduralSfx();
-    injectStartAudioUnlock();
-    injectStartupGuidanceAndLoading();
-  }
+  // ===== SECTION: BOOTSTRAP =====
+  const bootstrap = () => {
+    injectBaseVisualGuards();
+    loadStyleOnce('premium.css', 'premium-theme');
+    loadScriptOnce('audio-sfx.js', 'procedural-sfx');
+    if (IS_TOP_WINDOW) loadScriptOnce('audio-start-unlock.js', 'start-audio-unlock');
+    injectSingleStartScreen();
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+  else bootstrap();
 })();
