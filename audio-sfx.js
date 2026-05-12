@@ -19,6 +19,16 @@
   let pollTimer = null;
 
   const MUSIC_CANDIDATES = [
+    './public/music/Battlefield%20Ascent.mp3',
+    './public/music/Battlefield Ascent.mp3',
+    '/hand-drone-game/public/music/Battlefield%20Ascent.mp3',
+    '/hand-drone-game/public/music/Battlefield Ascent.mp3',
+    '/public/music/Battlefield%20Ascent.mp3',
+    '/public/music/Battlefield Ascent.mp3',
+    './music/Battlefield%20Ascent.mp3',
+    './music/Battlefield Ascent.mp3',
+    '/music/Battlefield%20Ascent.mp3',
+    '/music/Battlefield Ascent.mp3',
     './music/gameplay.mp3',
     './music/gameplay.ogg',
     './music/music.mp3',
@@ -181,7 +191,6 @@
     musicEl = document.createElement('audio');
     musicEl.preload = 'auto';
     musicEl.loop = true;
-    musicEl.crossOrigin = 'anonymous';
     musicEl.volume = musicGain;
     musicEl.style.display = 'none';
     document.body.appendChild(musicEl);
@@ -219,10 +228,6 @@
       el.currentTime = 0;
       await el.play();
       localMusicStarted = true;
-      // Stop the procedural Howler gameplay loop if it is active in play.html.
-      if (window.Howler) {
-        // Do not mute SFX globally. This local music simply plays alongside SFX.
-      }
     } catch (err) {
       console.warn('Local music did not start; keeping procedural fallback.', err);
     }
