@@ -1,19 +1,92 @@
-# Hand Drone XS
+Hand Controlled Drone Game
 
-**Historical name:** Hand Drone Game  
-**Status:** original browser hand-tracking arcade game  
-**Play:** https://joenasriani.github.io/hand-drone-game/  
-**Creator:** Joe Nasr  
-**Creator identity:** https://joe-nasr-signals.vercel.app/v2/
+Live game:
+https://joenasriani.github.io/hand-drone-game/
 
-Hand Drone XS is a browser drone game controlled with webcam hand tracking. Hand position steers the drone horizontally and vertically while the player flies through rings, avoids obstacles and survives increasing speed.
+A web-based endless runner game where you pilot a drone using real-time hand gestures captured by your webcam. Built with Three.js for 3D graphics and MediaPipe for hand tracking.
 
-## Requirements
+Requirements:
 
-The game requires camera permission and a modern browser. Three.js, MediaPipe and the hand-tracking model currently load from external services, so an internet connection is required for those dependencies.
+- Requires camera permission.
+- Requires an internet connection because Three.js, MediaPipe, and the hand tracking model load from external CDNs.
+- Works best in a modern desktop browser such as Chrome, Edge, or Firefox.
 
-## Technology
+How to Play
 
-HTML, CSS, Three.js and MediaPipe Tasks Vision.
+1. Open the game.
+2. Press Start Game.
+3. Allow camera access when prompted.
+4. Hold your hand clearly in front of the webcam.
+5. Move your hand left/right to steer the drone.
+6. Move your hand up/down to change altitude.
+7. Avoid trees.
+8. Fly through gold rings to score points.
+9. Survive as long as possible as the speed increases.
 
-Hand Drone XS and Hand Drone Game refer to the same game lineage. Existing branches and historical files are retained as development history.
+Features
+
+- Hand tracking control using MediaPipe.
+- 3D endless runner scene built with Three.js.
+- Procedural tree and ring spawning.
+- Score and speed progression.
+- Responsive canvas resizing.
+
+Tech Stack
+
+- HTML5 / CSS3
+- Three.js
+- MediaPipe Tasks Vision
+
+Installation and Usage
+
+This game is a single-file web application. There is no npm install, package.json, or build step required.
+
+Run locally:
+
+1. Run this in the folder containing index.html:
+   python3 -m http.server
+2. Open:
+   http://localhost:8000/
+
+You can also open index.html directly in a browser, but some browsers restrict camera access for local file pages. Running a local server is recommended.
+
+Host online:
+
+Upload index.html to GitHub Pages, Netlify, Vercel, itch.io, or any static hosting service.
+
+Troubleshooting
+
+Camera access denied:
+
+- Refresh the page.
+- Click Allow when the browser asks for camera permission.
+- Check that the site is not blocked in browser camera settings.
+
+Camera not supported:
+
+- Use a modern browser with navigator.mediaDevices.getUserMedia support.
+- Try Chrome or Edge if your current browser does not support webcam access.
+
+MediaPipe failed to load:
+
+- Check your internet connection.
+- Refresh the page.
+- Make sure CDN requests are not blocked by browser extensions, firewall rules, or privacy settings.
+
+Performance issues:
+
+- Enable hardware acceleration in your browser.
+- Close heavy background tabs.
+- Use a device with stronger graphics performance when possible.
+
+Hand not detected:
+
+- Use a well-lit environment.
+- Keep your full hand visible in the video preview.
+- Avoid strong backlighting.
+
+License
+
+MIT License. See LICENSE for details.
+
+Created with assistance.
