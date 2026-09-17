@@ -35,10 +35,11 @@
 - `audio-start-unlock.js`
   - Dedicated audio unlock and local music startup bootstrap.
   - Hooks the real Start Game button in both direct `index.html` mode and `play.html` iframe mode.
-  - Preloads and plays `public/music/Battlefield Ascent.mp3` from GitHub Pages-compatible paths.
+  - Preloads and plays the repository-root `Battlefield Ascent.mp3` through GitHub Pages-compatible paths.
 
-- `public/music/Battlefield Ascent.mp3`
+- `Battlefield Ascent.mp3`
   - Local gameplay music asset used by the audio unlock bootstrap.
+  - Author, original source, and licence are not established by repository evidence; see `MUSIC_ASSET_MANIFEST.md`.
 
 ### Load order dependencies
 
@@ -125,7 +126,7 @@ Added:
 3. `audio-start-unlock.js` scans current document for `#start-button`.
 4. User clicks Start Game.
 5. Browser gesture unlocks Web Audio and `<audio>` playback.
-6. `public/music/Battlefield Ascent.mp3` starts.
+6. `Battlefield Ascent.mp3` starts from the repository-root asset path.
 7. Main game initializes MediaPipe and camera.
 
 ### Validated path: `play.html`
