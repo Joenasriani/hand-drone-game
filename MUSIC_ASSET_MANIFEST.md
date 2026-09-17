@@ -9,7 +9,7 @@ The current game loads a local file named `Battlefield Ascent.mp3` from the repo
 - Repository file: `Battlefield Ascent.mp3`
 - Runtime status: active gameplay music asset
 - Format: MP3
-- Repository history: earlier commits referenced the file under `public/music/`; it was later moved/renamed to the repository root
+- Repository history: the same MP3 blob first appeared under `public/music/` and was later restored at the repository root
 - Author/composer: **unknown from repository evidence**
 - Original source URL: **unknown from repository evidence**
 - Licence: **unknown from repository evidence**
@@ -23,12 +23,14 @@ The repository must not represent the source-code MIT licence as establishing ri
 
 The following history is observable in Git:
 
-- `4dfc30ba...` — runtime code was changed to prioritize `public/music/Battlefield Ascent.mp3`.
+- `7a7ef709...` — added the MP3 blob as `public/music/Battlefield Ascent.mp3`.
+- `4dfc30ba...` — runtime code was changed to prioritize the `public/music/Battlefield Ascent.mp3` path.
 - `45f63c75...` — audio startup logic was changed to preload and play the local track.
-- `d89f4aac...` — `public/music/Battlefield Ascent.mp3` was renamed/moved to `Battlefield Ascent.mp3`.
+- `d89f4aac...` — removed the MP3 from `public/music/` and created a tiny root file with the same name; this commit did **not** transfer the audio blob.
+- `2c08da63...` — restored the original MP3 blob at the repository root as `Battlefield Ascent.mp3`.
 - `45ecf3b7...` — runtime references were relinked to the root-folder file.
 
-These commits establish use and file movement. They do **not** establish authorship, source, or licence.
+These commits establish repository use and file-history transitions. They do **not** establish authorship, original source, or licence.
 
 ## Procedural sound boundary
 
