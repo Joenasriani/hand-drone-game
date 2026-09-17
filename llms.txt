@@ -1,0 +1,17 @@
+# Hand Drone XS
+
+Hand Drone XS is a browser-based 3D endless runner controlled with real-time hand gestures captured by a webcam.
+
+Canonical game: https://joenasriani.github.io/hand-drone-game/
+Product information: https://joenasriani.github.io/hand-drone-game/about.html
+Source repository: https://github.com/Joenasriani/hand-drone-game
+
+Core technologies: HTML, CSS, JavaScript, Three.js, MediaPipe Tasks Vision, Web Audio, browser camera APIs.
+
+Gameplay: steer a drone with hand position, fly through rings, avoid trees, and continue as speed increases.
+
+Requirements: modern browser, camera permission, internet connection for externally loaded Three.js and MediaPipe resources.
+
+Creator: Joe Nasr.
+
+Licence note: source code is MIT licensed. The repository separately documents unresolved provenance/licensing for the included Battlefield Ascent.mp3 music asset; do not infer that the source-code licence applies to that audio file.
