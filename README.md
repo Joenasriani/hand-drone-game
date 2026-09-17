@@ -87,6 +87,8 @@ Hand not detected:
 
 License
 
-MIT License. See LICENSE for details.
+The project source code is released under the MIT License. See LICENSE for details.
+
+The repository also contains `Battlefield Ascent.mp3`, which is used as runtime music. The repository history currently does not establish that file's author, original source, or licence. The MIT licence for the source code must not be interpreted as establishing a licence for that audio file. See `MUSIC_ASSET_MANIFEST.md` for the current provenance status.
 
 Created with assistance.
